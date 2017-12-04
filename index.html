@@ -214,20 +214,972 @@ CarRule1,CarRule2,CarRule3それぞれトリガは起こるが、全てのルー
 <!-- 以下，上記と同様 -->
 [必須課題6-2] CarShop.data , AnimalWorld.data 等のデータファイルを実際的な応用事例に書き換えて，前向き推論，および後ろ向き推論に基づく質問応答システムを作成せよ．どのような応用事例を扱うかは，メンバーで話し合って決めること．
 なお，ユーザの質問は英語や日本語のような自然言語が望ましいが，難しければ変数を含むパターン等でも可とする．
+<後向き推論>
 <h3>独自仕様の説明</h3>
+<p>課題に加えて，以下の三点を独自仕様として組み込んだ．</p>
+
+<ol>
+  <li>扱うデータは虫に関するものにする</li>
+  <li>ユーザの質問は4パターンに対応する</li>
+  <li>エラーが発生した場合は推論の失敗とする</li>
+</ol>
+
+<p>
+  1.に関して，虫に関するルールベースをinsect.dataとして，ワーキングメモリをinsectWm.dataとして用意して，プログラム中でそれらのファイルを読み込む仕様とした．
+</p>
+<p>
+  2.に関して，"What is ~ ?", "Does ~ have ~ ?", "Is ~ ~ ?", "How many ~ does ~ have"という質問に対して応答する仕様とした．
+</p>
+<p>
+  3.に関して，try-catch構文を使用してエラー処理を行う仕様とした．
+</p>
+
 <h3>プログラムの構造</h3>
+<p>
+  実装したプログラムは五つのクラス RuleBaseSystem, RuleBase, FileManager, Rule, Unifier で構成されている．
+</p>
+
+<h4>RuleBaseSystemクラス</h4>
+<p>
+  RuleBaseSystem クラスは main メソッド，インスタンスメソッドとして backward(), makegraph() メソッドを持つ．<br>
+  main メソッドは，実行時に与えられる引数を質問として後向き推論を実行する．<br>
+  backward() メソッドは引数としてクラス String 型の変数 wmFileName, クラス String 型の変数 rbFileName, クラス String 型の変数 hypothesis, クラス String 型の変数 que, int 型の変数 mode を取り，wmFileNameとして指定されたファイルをワーキングメモリとして，rbFileNameとして指定されたファイルをルールベースとして，後向き推論によって仮説hypothesisを検証する．後向き推論の結果によって適切な応答を行う．<br>
+  makegraph() メソッドは，GraphVizを使用して後向き推論の推論過程を可視化する．
+</p>
+
+<h4>RuleBaseクラス</h4>
+<p>
+  RuleBase クラスは コンストラクタ，インスタンスメソッドとして backwardChain(), matchingPatterns(), matchingPatternOne(), rename(), instantiate(), var() メソッドを持つ．<br>
+  コンストラクタ は引数としてクラス ArrayList 型の変数 theRules, クラス ArrayList 型の変数 theWm を取り，RuleBase クラスのインスタンスを生成する．<br>
+  backwardChain() メソッドは引数としてクラス ArrayList 型の変数 hypothesis を取り，引数として与えられた hypothesis を仮説とした後向き推論を行い，戻り値として発火したルールとアサーションが格納されているクラス ArrayList 型の変数 theFired を返す．<br>
+  matchingPatterns() メソッドは引数としたクラス ArrayList 型の変数 thePatterns, クラス HashMap 型の変数 theBinding, クラス ArrayList 型の変数 theFired を取り，与えられた全ての仮説とマッチするワーキングメモリのアサーションやルールの後件に対する変数束縛情報を再帰的に求めて，戻り値として matchingPatternOne() の結果が成功したらtrue, 失敗したらfalseを返す．<br>
+  matchingPatternOne() メソッドは引数としてクラス String 型の変数 thePattern, クラス HashMap 型の変数 theBinding, int 型の変数 cPoint, クラス ArrayList 型の変数 theFired を取り，与えられた一つの仮説を満たす変数束縛を得て，戻り値としてユニフィケーションが成功したら，成功したワーキングエレメントの番号またはルールの番号の次の番号を返し，ユニフィケーションが失敗したら，-1を返す．<br>
+  rename() メソッドは引数としてクラス Rule 型の変数 theRule を取り，戻り値として引数として与えられた theRule の中に含まれる変数をユニークな名前の変数に置き換えたルールを返す．<br>
+  instantiate() メソッドは引数としてクラス String 型の変数 thePattern, クラス HashMap 型の変数 theBindings を取り，戻り値として引数として与えられた thePattern を変数束縛情報 theBindings に従って具体化したものを返す．<br>
+  var() メソッドは引数としてクラス String 型の変数 str1 を取り，戻り値として str1 が変数ならtrueを返す．
+</p>
+
+<h4>FileManagerクラス</h4>
+<p>
+  FileManager クラスはインスタンスメソッドとして loadRules(), loadWm() メソッドを持つ．<br>
+  loadRules() メソッドは引数としてクラス String 型の変数 theFileName を取り，戻り値としてtheFileNameとして指定されたファイルから読み出したルールのリストを返す．<br>
+  loadWm() メソッドは引数としてクラス String 型の変数 theFileName を取り，戻り値としてtheFileNameとして指定されたファイルから読みだしたアサーションのリストを返す．
+</p>
+
+<h4>Ruleクラス</h4>
+<p>
+  Rule クラスは コンストラクタ，インスタンスメソッドとして getRenamedRule(), getVars(), makeRenamedVarsTable(), renameVars(), var(), getName(), toString(), getAntecedents(), getConsequent() メソッドを持つ．<br>
+  コンストラクタ は引数としてクラス String 型の変数 theName, クラス ArrayList 型の変数 theAntecedents, クラス String 型の変数 theConsequent を取り，Rule クラスのインスタンスを生成する．<br>
+  getRenamedRule() メソッドは引数として int 型の変数 uniqueNum を取り，戻り値として uniqueNum を用いて Rule クラスのインスタンスであるルールの変数をリネーミングしたルールを返す．<br>
+  getVars() メソッドは引数としてクラス String 型の変数 thePattern, クラス ArrayList 型の変数 vars を取り，戻り値として thePattern から変数を取り出したリストを返す．<br>
+  makeRenamedVarsTable() メソッドは引数としてクラス ArrayList 型の変数 vars, int 型の変数 uniqueNum を取り，戻り値として 元の変数と新たな変数の対応を保管するクラス HashMap 型の result を返す．<br>
+  renameVars() メソッドは引数としてクラス String 型の変数 thePattern, クラス HashMap 型の変数 renamedVarsTable を取り，戻り値として thePattern の中の変数を renamedVarsTable を基にして書き換えたものを返す．<br>
+  var() メソッドは引数としてクラス String 型の変数 str を取り，戻り値として str が変数ならば true を，変数でなければ false を返す．<br>
+  getName() メソッドは，戻り値として Rule クラスのインスタンスの name を返す．<br>
+  toString() メソッドは，戻り値として Rule クラスのインスタンスを文字列にしたものを返す．<br>
+  getAntecedents() メソッドは，戻り値として Rule クラスのインスタンスの antecedents を返す．<br>
+  getConsequent() メソッドは，戻り値として Rule クラスのインスタンスの consequent を返す．
+</p>
+
+<h4>Unifierクラス</h4>
+<p>
+  Unifier クラスは コンストラクタ，3引数のunify(), 2引数のunify(), tokenMatching(), varMatching(), replaceBuffer(), replaceBindings(), var() メソッドを持つ．<br>
+  コンストラクタ は，Unifier クラスのインスタンスを生成する．<br>
+  3引数のunify() メソッドは引数としてクラス String 型の変数 string1, クラス String 型の変数 string2, クラス HashMap 型の変数 theBindings を取り，戻り値として 2引数のunify() が成功したら true を，失敗したら false を返す．<br>
+  2引数のunify() メソッドは引数としてクラス String 型の変数 string1, クラス String 型の変数 string2 を取り，戻り値としてパターンマッチングが成功したら true を，失敗したら false を返す．<br>
+  tokenMatching() メソッドは引数としてクラス String 型の変数 token1, クラス String 型の変数 token2 を取り，戻り値として tokn1 と token2 のパターンマッチングに成功したら true を，失敗したら false を返す．<br>
+  varMatching() メソッドは引数としてクラス String 型の変数 vartoken, クラス String 型の変数 token を取り，戻り値として vartoken と token のパターンマッチングに成功したら true を，失敗したら false を返す．<br>
+  replaceBuffer() メソッドは引数としてクラス String 型の変数 preString, クラス String 型の変数 postString を取り，bufferに存在するpreStringという名前の変数を全てpostStringという定数に置き換える．<br>
+  replaceBindings() メソッドは引数としてクラス String 型の変数 preString, クラス String 型の変数 postString を取り，preStringをハッシュ値として持つキーのハッシュ値をpostStringに変更する．<br>
+  var() メソッドは引数としてクラス String 型の変数 str1 を取り，str1が変数なら戻り値としてtrueを返す．
+</p>
+
 <h3>実装の説明</h3>
 <!--
   ソースコードをはりつける時は <pre> タグを使う
   class="brush: java" でシンタックスハイライトする
   重要な部分のみを貼り付ければ良い
 -->
+<h4>RuleBaseSystemクラス</h4>
+<p>
+  実装したプログラムに関して，先に挙げた RuleBaseSystem クラスが持つ main, backward(), makegraph() メソッドの説明を行う．
+</p>
+<p>
+  下記は main メソッドの実装である．ここで特筆すべき点は，実行時に与えられる引数がなかった場合のチェックを行っていることである．引数がなかった場合はこの後向き推論のプログラムに引数が必要であることをコンソールに出力する．実行時に与えられる引数を質問として，その質問の形式に応じて後向き推論で検証すべき仮説をクラス String 型の変数 hypothesis としている．質問の形式に応じて，応答文を生成する方法も変わってくるので，その質問の形式を int 型の変数 mode としている．
+</p>
 <pre class="brush: java">
+public static void main(String args[]) {
+  if (args.length != 1) {
+    System.out.println("Usage: %java RuleBaseSystem [query strings]");
+    System.out.println("Example:");
+    System.out.println(" \"?x is b\" and \"?x is c\" are queries");
+    System.out.println("  %java RuleBaseSystem \"?x is b,?x is c\"");
+  } else {
+//    fm = new FileManager();
+//    ArrayList&ltRule&gt rules = fm.loadRules("CarShop.data");
+//    ArrayList rules = fm.loadRules("AnimalWorld.data");
+//    ArrayList&ltString&gt wm = fm.loadWm("CarShopWm.data");
+//    ArrayList wm = fm.loadWm("AnimalWorldWm.data");
+//    ArrayList&ltRule&gt rules = fm.loadRules("Insect.data");
+//    ArrayList&ltString&gt wm = fm.loadWm("InsectWm.data");
+//    rb = new RuleBase(rules, wm);
+//    StringTokenizer st = new StringTokenizer(args[0], ",");
+//    ArrayList&gtString&gt queries = new ArrayList&ltString&gt();
+//    for (int i = 0; i < st.countTokens(); ) {
+//      queries.add(st.nextToken());
+//    }
+//    rb.backwardChain(queries);
+    // ファイル名指定
+    String wmFileName = "InsectWm.data";
+    String rbFileName = "Insect.data";
 
+    String question = args[0]; // 第1引数に検証したい仮説
+    // 正規表現のパターンを作成
+    Pattern pat1 = Pattern.compile("What is [a-z]*");
+    Matcher mat1 = pat1.matcher(question);
+    Pattern pat2 = Pattern.compile("Does [a-zA-Z]* have [a-z]*");
+    Matcher mat2 = pat2.matcher(question);
+    Pattern pat3 = Pattern.compile("Is [a-zA-Z]* [a-z]*");
+    Matcher mat3 = pat3.matcher(question);
+    Pattern pat4 = Pattern.compile("How many [a-z]* does [a-zA-Z]* have");
+    Matcher mat4 = pat4.matcher(question);
+//    Pattern pat4 = Pattern.compile("Is it [a-z]*");
+//    Matcher mat4 = pat4.matcher(args[0]);
+    String hypothesis = null;
+    String que = null;
+    String subject = null; // 主語
+    String object = null; // 目的語
+    int mode = 0;
+    if (mat1.find()) { // What is ~ ? ifのアサーションを全て出力
+      subject = question.substring(8, question.length() - 2);
+      hypothesis = "?x is " + subject;
+      mode = 1;
+    } else if (mat2.find()) { // Does ~ have ~ ?
+      subject = question.substring(5, question.indexOf("have") - 1);
+      hypothesis = "?x is a " + subject;
+      object = question.substring(question.indexOf("have") + 5);
+      que = " has " + object;
+      mode = 2;
+    } else if (mat3.find()) { // Is ~ ~ ?
+      subject = question.substring(3).substring(0, question.substring(3).indexOf(" "));
+      hypothesis = "?x is a " + subject;
+      object = question.substring(3).substring(question.substring(3).indexOf(" "));
+      que = " is a" + object;
+      mode = 3;
+    } else if (mat4.find()) { // How many ~ does ~ have ?
+      subject = question.substring(question.indexOf("does") + 5, question.indexOf("have") - 1);
+      hypothesis = "?x is a " + subject;
+      object = question.substring(9, question.indexOf("does") - 1);
+      que = " has " + object;
+      mode = 4;
+    }
+//    hypothesis = "?x is a Carolla Wagon";
+//    que = "his-car has several seats";
+    System.out.println("Question:" + question);
+//    System.out.println(hypothesis);
+//    System.out.println(que);
+//    System.out.println(Integer.toString(mode));
+    ArrayList&ltString&gt ans = backward(wmFileName, rbFileName, hypothesis, que, mode);
+    System.out.println(ans);
+  }
+  makegraph();
+}
+</pre>
+<p>
+  下記は backward() メソッドの実装である．ここで特筆すべき点は，引数として与えられたクラス String 型の wmFileName として指定されたファイルのアサーションを FileManager クラスの loadRules() メソッドを使用して，クラス ArrayList 型の変数 rules に一つずつ格納していき，引数として与えられたクラス String 型の rbFileName として指定されたファイルのルールを FileManager クラスの loadWm() メソッドを使用して，クラス ArrayList 型の変数 wm に一つずつ格納していることである．そのようにして得た rules と wm を引数としてクラス RuleBase 型の変数 rb をインスタンス化している．インスタンス化した rb に対して RuleBase クラスの backwardChain() メソッドを使用して後向き推論を実行する．そしてbackwardChain() メソッドの戻り値として返されたクラス ArrayList 型の変数 theFired を用いて質問の形式に合わせた適切な応答文を生成して出力している．
+</p>
+<pre class="brush: java">
+public static ArrayList&ltString&gt backward(String wmFileName, String rbFileName, String hypothesis, String que, int mode) {
+  fm = new FileManager();
+  ArrayList&ltRule&gt rules = fm.loadRules(rbFileName);
+    //ArrayList rules = fm.loadRules("AnimalWorld.data");
+  ArrayList&ltString&gt wm = fm.loadWm(wmFileName);
+    //ArrayList wm    = fm.loadWm("AnimalWorldWm.data");
+  rb = new RuleBase(rules, wm);
+//  System.out.println(rb.wm.toString()); // 数字に対してエラーをはく
+  StringTokenizer st = new StringTokenizer(hypothesis, ",");
+  ArrayList&ltString&gt queries = new ArrayList&ltString&gt();
+  for (int i = 0; i < st.countTokens(); ) {
+    queries.add(st.nextToken());
+  }
+  ArrayList&ltString&gt theFired = new ArrayList&ltString&gt();
+  try {
+    theFired = rb.backwardChain(queries); // 後向き推論の実行
+  } catch (Exception e) {
+    System.out.println(e);
+  }
+  boolean success = true;
+  if (mode != 1) {
+    try {
+      que = theFired.get(0).substring(0, theFired.get(0).indexOf(" ")) + que;
+    } catch (Exception e) {
+      System.out.println(e);
+      success = false;
+    }
+  }
+  System.out.println();
+  System.out.println("Answer");
+  if (success) {
+    if (mode == 1) {
+      String subject = hypothesis.substring(8); // 主語を取得
+//      System.out.println(subject);\
+      boolean result = false;
+      for (String s : theFired) {
+        if (!s.substring(s.indexOf(" is ") + 1).equals(hypothesis.substring(hypothesis.indexOf(" is ") + 1))) { // theFiredの末尾にはhypothesisが入っている
+          if (s.contains(" is ")) { // ~ is ~ という形式のアサーションのみ出力
+            result = true; // 1つでも解がある
+            String ans = subject + s.substring(s.indexOf(" is "));
+            System.out.println(ans);
+            ansList.add(ans);
+          }
+        }
+      }
+//      if (theFired.contains(que)) {
+//        System.out.println("Exists");
+//      } else {
+//        System.out.println("Not Exists");
+//      }
+      if (!result) {
+        String ans = "I don't know.";
+        System.out.println(ans);
+        ansList.add(ans);
+      }
+    } else if (mode == 2) {
+      Pattern patSubject = Pattern.compile(que.substring(0, que.indexOf("has") + 3));
+//      System.out.println(patSubject);
+      Pattern patObject = Pattern.compile(que.substring(que.indexOf("has") + 4));
+//      System.out.println(patObject);
+      boolean result = false;
+      for (String s : theFired) {
+        Matcher matSubject = patSubject.matcher(s);
+        if (matSubject.find()) {
+//          System.out.println("success");
+          Matcher matObject = patObject.matcher(s);
+          if (matObject.find()) {
+//            System.out.println("Exists");
+            result = true;
+            String ans = "Yes, it has.";
+            System.out.println(ans);
+            ansList.add(ans);
+          }
+        }
+      }
+      if (!result) {
+        String ans = "No, it hasn't.";
+        System.out.println(ans);
+        ansList.add(ans);
+      }
+    } else if (mode == 3) {
+      Pattern patSubject = Pattern.compile(que.substring(0, que.indexOf("is") + 3));
+//      System.out.println(patSubject);
+      Pattern patObject = Pattern.compile(que.substring(que.indexOf("is") + 4));
+//      System.out.println(patObject);
+      boolean result = false;
+      for (String s : theFired) {
+        Matcher matSubject = patSubject.matcher(s);
+        if (matSubject.find()) {
+//          System.out.println("success");
+          Matcher matObject = patObject.matcher(s);
+          if (matObject.find()) {
+//            System.out.println("Exists");
+            result = true;
+            String ans = "Yes, it is.";
+            System.out.println(ans);
+            ansList.add(ans);
+          }
+        }
+      }
+      if (!result) {
+        String ans = "No, it isn't.";
+        System.out.println(ans);
+        ansList.add(ans);
+      }
+    } else if (mode == 4) {
+      Pattern patSubject = Pattern.compile(que.substring(0, que.indexOf("has") + 3));
+//      System.out.println(patSubject);
+      Pattern patObject = Pattern.compile(que.substring(que.indexOf("has") + 4));
+//      System.out.println(patObject);
+      boolean result = false;
+      for (String s : theFired) {
+        Matcher matSubject = patSubject.matcher(s);
+        if (matSubject.find()) {
+//          System.out.println("success");
+          Matcher matObject = patObject.matcher(s);
+          if (matObject.find()) {
+//            System.out.println("Exists");
+            result = true;
+            s = s.replaceAll(patSubject.toString(), "");
+            s = s.replaceAll("-" + patObject.toString(), "");
+            s = s.replaceAll(" ", "");
+            System.out.println(patSubject + " " + s + " " + patObject + ".");
+            System.out.println(ans);
+            ansList.add(ans);
+          }
+        }
+      }
+      if (!result) {
+        String ans = "I don't know.";
+        System.out.println(ans);
+        ansList.add(ans);
+      }
+    }
+  } else {
+    if (mode == 1) {
+      String ans = "I don't know.";
+      System.out.println(ans);
+      ansList.add(ans);
+    } else if (mode == 2) {
+      String ans = "No, it hasn't.";
+      System.out.println(ans);
+      ansList.add(ans);
+    } else if (mode == 3) {
+      String ans = "No, it isn't.";
+      System.out.println(ans);
+      ansList.add(ans);
+    } else if (mode == 4) {
+      String ans = "I don't know.";
+      System.out.println(ans);
+      ansList.add(ans);
+    }
+  }
+  return ansList;
+}
+</pre>
+<p>
+  下記は makegraph() メソッドの実装である．ここで特筆すべき点は，GraphVizを使用して後ろ向き推論の推論過程を描画するためのdotファイルを記述していることである．dotファイルを元にした描画は GraphViz クラスの writeGraphToFile() メソッドを使用して行っている．描画した推論過程はback1.pngとして /workspace/BackwardChain の下に保存される．
+</p>
+<pre class="brush: java">
+public static void makegraph() {
+
+  GraphViz gv = new GraphViz();
+  gv.addln(gv.start_graph());
+  ArrayList&ltString&gt l = RuleBase.graph;
+  for (String l1 : l) {
+    gv.addln(l1);
+  }
+  ArrayList&ltString&gt list = RuleBase.graph1;
+  for (String l2 : list) {
+    gv.addln(l2);
+  }
+
+  gv.addln(gv.end_graph());
+  //System.out.println(gv.getDotSource());
+  String type = "png";
+  File out = new File("back1." + type); // out.gif in this example
+  gv.writeGraphToFile(gv.getGraph(gv.getDotSource(), type), out);
+}
 </pre>
 
+<h4>RuleBaseクラス</h4>
+<p>
+  続いて，先に挙げた RuleBase クラスが持つ コンストラクタ, backwardChain(), matchingPatterns(), matchingPatternOne(), rename(), instantiate(), var() メソッドの説明を行う．
+</p>
+<p>
+  コンストラクタについて特筆すべき点は，ワーキングメモリを表すクラス ArrayList 型の wm と，ルールベースを表すクラス ArrayList 型の rules をインスタンス化していることである．
+</p>
+<p>
+  backwardChain() メソッドについて特筆すべき点は，質問に対する応答文の生成の際に使用するために，発火したルールとアサーションが格納されているクラス ArrayList 型の変数 theFired を返していることである．
+</p>
+<p>
+  下記は matchingPatterns() メソッドの実装である．ここで特筆すべき点は，int 型の変数 cPoint によって，現在どのワーキングメモリエレメントまたはどのルールとのマッチングを試行しているかを一時的に格納していることである．ワーキングメモリエレメントとルールに番号付けがされている．また，再帰的定義を使用して，与えられた全ての仮説とマッチするワーキングメモリのアサーションやルールの後件に対する変数束縛情報を，引数として与えられたクラス ArrayList 型の theBinding に格納している．後向き推論の推論過程を描画するためのクラス ArrayList 型の変数への操作も状況に応じて行われている．
+</p>
+<pre class="brush: java">
+private boolean matchingPatterns(ArrayList&ltString&gt thePatterns, HashMap&ltString, String&gt, ArrayList&ltString&gt theFired) {
+  String firstPattern;
+  if (thePatterns.size() == 1) {
+    firstPattern = (String) thePatterns.get(0);
+    if (matchingPatternOne(firstPattern, theBinding, 0, theFired) != -1) {
+      return true;
+    } else {
+      return false;
+    }
+  } else {
+    firstPattern = (String) thePatterns.get(0);
+    thePatterns.remove(0);
+
+    int cPoint = 0; // choice point
+    while (cPoint < wm.size() + rules.size()) {
+      // 元のバインディングを取っておく
+      HashMap&ltString, String&gt orgBinding = new HashMap&ltString, String&gt();
+      for (Iterator&ltString&gt i = theBinding.keySet().iterator(); i.hasNext(); ) {
+        String key = i.next();
+        String value = (String) theBinding.get(key);
+        orgBinding.put(key, value);
+      }
+      ArrayList&ltString&gt orgFired = theFired; // 元のtheFiredを取っておく
+      //元のノード関係をとっておく
+      oldgraph2.clear();
+      oldgraph3.clear();
+      for (String l : oldgraph) {
+        oldgraph2.add(l);
+      }
+      for (String l : oldgraph1) {
+        oldgraph3.add(l);
+      }
+      int tmpPoint = matchingPatternOne(firstPattern, theBinding, cPoint, theFired);
+      System.out.println("tmpPoint: " + tmpPoint);
+      if (tmpPoint != -1) {
+        System.out.println("Success:" + firstPattern);
+        theFired.add(firstPattern); // 途中のアサーションをtheFiredに追加
+        System.out.println("thePatterns: " + thePatterns.toString());
+        System.out.println("theFired: " + theFired);
+        if (matchingPatterns(thePatterns, theBinding, theFired)) {
+          //成功
+          System.out.println("Success");
+//        ansFired = theFired;
+          return true;
+        } else {
+          //失敗
+          //choiceポイントを進める
+          cPoint = tmpPoint;
+          // 失敗したのでバインディングを戻す
+          theBinding.clear();
+          for (Iterator&ltString&gt i = orgBinding.keySet().iterator(); i.hasNext(); ) {
+            String key = i.next();
+            String value = orgBinding.get(key);
+            theBinding.put(key, value);
+          }
+//          theFired = orgFired; // 失敗したら元に戻す
+          theFired.clear();
+          //ノード関係の復元
+          oldgraph.clear();
+          oldgraph1.clear();
+          for (String l : oldgraph2) {
+            oldgraph.add(l);
+          }
+          for (String l : oldgraph3) {
+            oldgraph1.add(l);
+          }
+        }
+      } else {
+        // 失敗したのでバインディングを戻す
+        theBinding.clear();
+        for (Iterator&ltString&gt i = orgBinding.keySet().iterator(); i.hasNext(); ) {
+        String key = i.next();
+        String value = orgBinding.get(key);
+        theBinding.put(key, value);
+        }
+        theFired.clear();
+        //ノード関係の復元
+        oldgraph.clear();
+        oldgraph1.clear();
+        for (String l : oldgraph2) {
+          oldgraph.add(l);
+        }
+        for (String l : oldgraph3) {
+          oldgraph1.add(l);
+        }
+        return false;
+      }
+    }
+    return false;
+    /*
+    if(matchingPatternOne(firstPattern,theBinding)){
+      return matchingPatterns(thePatterns,theBinding);
+    } else {
+      return false;
+    }
+    */
+  }
+}
+</pre>
+<p>
+  下記は matchingPatternOne() メソッドの実装である．ここで特筆すべき点は，後向き推論の特徴であるバックトラックの機能を，再帰的なメソッド呼び出しによって実現していることである．matchingPatterns() メソッドを再帰的な呼び出しによって，関数呼び出しのためのスタックを利用したバックトラックの処理が実現される．バックトラックによって変数束縛の情報，発火したアサーションとルールの情報，推論過程を描画するためのリストの情報が一つ前の推論ステップにおける状態に戻される．
+</p>
+<pre class="brush: java">
+private int matchingPatternOne(String thePattern, HashMap&ltString, String&lt theBinding, int cPoint, ArrayList&ltString&gt theFired) {
+  if (cPoint < wm.size()) {
+    // WME(Working Memory Elements) と Unify してみる．
+    for (int i = cPoint; i < wm.size(); i++) {
+      if ((new Unifier()).unify(thePattern, (String) wm.get(i), theBinding)) {
+        System.out.println("Success WM");
+        System.out.println((String) wm.get(i) + " <=> " + thePattern);
+        theFired.add(wm.get(i)); // 発火したアサーションを追加
+        System.out.println("theFired: " + theFired.toString());
+        String m = "";
+        String label = "[label =\"" + thePattern + "\"]";
+        String m1 = "";
+        boolean check = false;
+        for (String l : name) {
+          if (label.equals(l)) {
+            check = true;
+          }
+        }
+        if (check) {
+          m = "\"" + hash.get(label) + "\"" + label;
+          m1 = hash.get(label);
+        } else {
+          m = "\"b" + Integer.toString(count) + "\"" + "[label=\"" + thePattern + "\"]";
+          m1 = "b" + Integer.toString(count);
+        }
+        String n = "\"d" + Integer.toString(count) + "\"" + "[label =\"" + (String) wm.get(i) + "\"]";
+
+        graph.add(m + "->" + n);
+        graph1.add(m1 + "->" + "d" + Integer.toString(count));
+        count++;
+        return i + 1;
+      }
+    }
+  }
+  if (cPoint < wm.size() + rules.size()) {
+    // Ruleと Unify してみる．
+    for (int i = cPoint; i < rules.size(); i++) {
+      Rule aRule = rename((Rule) rules.get(i));
+      // 元のバインディングを取っておく．
+      HashMap&ltString, String&gt orgBinding = new HashMap&ltString, String&gt();
+      for (Iterator&ltString&gt itr = theBinding.keySet().iterator(); itr.hasNext(); ) {
+        String key = itr.next();
+        String value = theBinding.get(key);
+        orgBinding.put(key, value);
+      }
+      ArrayList&ltString&gt orgFired = theFired; // 元のtheFiredを取っておく
+      if ((new Unifier()).unify(thePattern, (String) aRule.getConsequent(), theBinding)) {
+        System.out.println("Success RULE");
+        System.out.println("Rule:" + aRule + " <=> " + thePattern);
+        ArrayList&ltString&gt antecedents = aRule.getAntecedents();
+        String consequent = aRule.getConsequent();
+        String m = "";
+        String label = "[label =\"" + thePattern + "\"]";
+        String m1 = "";
+        boolean check = false;
+        for (String l : name) {
+          if (label.equals(l)) {
+            check = true;
+          }
+        }
+        if (check) {
+          m = "\"" + hash.get(label) + "\"" + label;
+          m1 = hash.get(label);
+        } else {
+          m = "\"b" + Integer.toString(count) + "\"" + "[label=\"" + thePattern + "\"]";
+          m1 = "b" + Integer.toString(count);
+        }
+        String n = "\"a" + Integer.toString(count) + "\"[shape=record,label=\"{" + aRule.getName() + "|if";
+        String a = "a" + Integer.toString(count);
+        for (String l : antecedents) {
+          n += l + "|";
+        }
+        n += "then" + consequent;
+        n += "}\"]";
+        System.out.println(n);
+        oldgraph.clear();
+        oldgraph1.clear();
+        for (String l : graph) {
+          oldgraph.add(l);
+        }
+        for (String l : graph1) {
+          oldgraph1.add(l);
+        }
+        graph.add(m + "->" + n);
+        graph1.add(m1 + "->" + a);
+        for (String n1 : antecedents) {
+          String n2 = "\"c" + Integer.toString(count) + "\"" + "[label=\"" + n1 + "\"]";
+          name.add("[label =\"" + n1 + "\"]");
+          hash.put("[label =\"" + n1 + "\"]", "c" + Integer.toString(count));
+          graph1.add(a + "->" + "c" + Integer.toString(count));
+          count++;
+          graph.add(n + "->" + n2);
+        }
+        // さらにbackwardChaining
+        ArrayList&ltString&gt newPatterns = aRule.getAntecedents();
+        System.out.println("newPatterns: " + newPatterns.toString());
+        System.out.println("theBinding: " + theBinding);
+        if (matchingPatterns(newPatterns, theBinding, theFired)) {
+          return wm.size() + i + 1;
+        } else {
+          // 失敗したら元に戻す．
+          theBinding.clear();
+          for (Iterator&ltString&gt itr = orgBinding.keySet().iterator(); itr.hasNext(); ) {
+            String key = itr.next();
+            String value = orgBinding.get(key);
+            theBinding.put(key, value);
+          }
+//          theFired = orgFired; // 失敗したら元に戻す
+          theFired.clear();
+          graph.clear();
+          graph1.clear();
+          for (String l : oldgraph) {
+            graph.add(l);
+          }
+          for (String l : oldgraph1) {
+            graph1.add(l);
+          }
+        }
+      }
+    }
+  }
+  return -1;
+}
+</pre>
+<p>
+  rename() メソッド について特筆すべき点は，Rule クラスの getRenamedRule() メソッドを呼び出すことによって，引数として与えられたルールの中に含まれる変数をユニークな名前の変数に置き換えていることである．ユニークな名前を生成するために唯一の番号 uniqueNum を生成し，それを getRenamedRule() メソッドに引数として渡している．
+</p>
+<p>
+  instantiate() メソッドについて特筆すべき点は，引数として与えられた thePattern を変数束縛情報 theBindings に従って具体化する際に，文字列 thePattern を StringTokenizer クラスのコンストラクタの引数として与えることでトークンに分け，各々のトークンが変数ならば変数束縛情報 theBindings からその値を取得し，変数でなければそのまま出力していることである．
+</p>
+<p>
+  vars() メソッドについて特筆すべき点は，引数として与えられた str1 の先頭が ? なら変数として true を返していることである．
+</p>
+
+<h4>FileManagerクラス</h4>
+<p>
+  続いて，先に挙げた FileManager クラスが持つ loadRules(), loadWm() メソッドの説明を行う．
+</p>
+<p>
+  loadRules() メソッドについて特筆すべき点は，実装上のルールの表現形式に基づいてルールの読み込みを行っていることである．FileReader() メソッドによってファイルのストリームを受け取り，そのストリームに基づき StreamTokenizer を生成し，トークンごとにswitch文で場合分けしている．
+</p>
+<p>
+  loadWm() メソッドについて特筆すべき点は，loadRules() メソッドと同様に，実装上のワーキングメモリエレメントであるアサーションの表現形式に基づいてルールの読み込みを行っていることである．FileReader() メソッドによってファイルのストリームを受け取り，そのストリームに基づき StreamTokenizer を生成し，トークンごとに改行が起こるまで1文字分のスペースを空けながらつなげていく．
+</p>
+
+<h4>Ruleクラス</h4>
+<p>
+  続いて，先に挙げた Rule クラスが持つ コンストラクタ, getRenamedRule(), getVars(), makeRenamedVarsTable(), renameVars(), var(), getName(), toString(), getAntecedents(), getConsequent() メソッドの説明を行う．
+</p>
+<p>
+  コンストラクタ について特筆すべき点は，ルールの名前を表すクラス String 型の name と，ルールの前件を表すクラス ArrayList 型の antecedents と，ルールの後件を表すクラス ArrayList 型の consequent をインスタンス化していることである．
+</p>
+<p>
+  getRenamedRule() メソッドについて特筆すべき点は，ルールに含まれる変数を前件を表すクラス ArrayList 型の antecedents と後件を表すクラス String 型の consequent から getVars() メソッドを用いて全て取り出し，makeRenamedVarsTable() メソッドを用いて各変数に対応した新たな変数名を生成し，その対応関係をクラス HashMap 型の renamedVarsTable に格納していることである．そのようにして得た renamedVarsTable に従い，renameVars() メソッドを用いて書き換えたルールを戻り値として返している．
+</p>
+<p>
+  getVars() メソッドについて特筆すべき点は，引数として得たクラス String 型の thePattern をトークンに分け，各トークンが変数ならばそれをクラス ArrayList 型の vars に加えていき，最後に戻り値として vars を返していることである．
+</p>
+<p>
+  makeRenamedVarsTable() メソッドについて特筆すべき点は，引数として得たクラス ArrayList 型の vars と int 型の uniqueNum を基に新たな変数を生成し，元の変数と新たな変数の対応をクラス HashMap 型の result として保管し，最後に戻り値として result を返していることである．
+</p>
+<p>
+  renameVars() メソッドについて特筆すべき点は，引数として得たクラス String 型の thePattern をトークンに分け，各トークンに関してトークンが変数であれば引数として得たクラス HashMap 型の renamedVarsTable を基にして変数を書き換え，変数でなければそのままにしていることである．
+</p>
+<p>
+  var() メソッドについて特筆すべき点は，引数として与えられた str の先頭が ? なら変数として true を返していることである．
+</p>
+<p>
+  getName(), toString(), getAntecedents(), getConsequent() メソッドについて特筆すべき点は，メソッド名からどんな操作をするのかが一目でわかることである．
+</p>
+
+<h4>Unifierクラス</h4>
+<p>
+  続いて，先に挙げた Unifier クラスが持つコンストラクタ, 3引数のunify(), 2引数のunify(), tokenMatching(), varMatching(), replaceBuffer(), replaceBindings(), var() メソッドの説明を行う．
+</p>
+<p>
+  コンストラクタについて特筆すべき点は，パターンマッチングの課題で使用した際とは異なり，クラス HashMap 型の vars をインスタンス化してしていないことである．
+</p>
+<p>
+  3引数のunify() メソッドについて特筆すべき点は，引数として得たクラス HashMap 型の theBindings を初期の変数束縛情報としてもつことができるようになっていることである．変数束縛情報について初期値をもっているために，unify() メソッドの実行が進行し失敗したら，変数束縛情報を初期値に戻す必要があるため，変数束縛情報をクラス HashMap 型の orgBindings として保存してから 2引数のunify() メソッドを実行する．もし失敗したら，変数束縛情報を元の初期値に戻す操作を実行する．
+</p>
+<p>
+  2引数のunify() メソッドについて特筆すべき点は，引数として得たクラス String 型の string1 と，クラス String 型の string2が同じなら true を返し，異なれば各々トークンに分けてパターンマッチングを行っていることである．初期値として変数束縛情報が与えられていたら，その変数束縛情報に基づいてトークンを具体化している．
+</p>
+<p>
+  tokenMatching() メソッドについて特筆すべき点は，引数として得たクラス String 型の token1 と，クラス String 型の token2 が等しければ true を返し，varMatching() メソッドの引数として与えた結果が成功したら true を返し，失敗したら false を返していることである．
+</p>
+<p>
+  varMatching() メソッドについて特筆すべき点は，Unifier クラスのインスタンスの変数束縛情報が保管されている vars に引数として与えられたクラス String 型の vartoken がキーとして含まれている場合といない場合の場合分けがされていることである．vartoken がキーとして含まれていない場合は replaceBindings() メソッドを使用して，さらに vartoken がキー値として含まれている場合は replaceBindings() メソッドを使用している．
+</p>
+<p>
+  replaceBuffer() メソッドについて特筆すべき点は，forループにより1つ目の引数として与えられたクラス String 型の変数 preString と同じ名前の変数が配列 buffer1, buffer2 中に存在するかを走査し，もし存在すればその変数を2つ目の引数として与えられたクラス String 型の変数 postString に置き換えていることである．
+</p>
+<p>
+  replaceBindings() メソッドについて特筆すべき点は，クラス Iterator 型の変数 keys をforループのイテレータとして使用していることである．Iteratorクラスの使用により，処理速度を向上させている．forループ内では1つ目の引数として与えられたクラス String 型の変数 preString をハッシュ値に持つキーがあれば，そのキーのハッシュ値を2つ目の引数として与えられたクラス String 型の変数 postString に変更するという操作を行なっている
+</p>
+<p>
+  var() メソッドについて特筆すべき点は，Stringクラスの startsWith() メソッドを使用して，引数として与えられたクラス String 型の変数 str1 がパターンマッチングにおける変数かどうか確かめ，変数ならtrueを，そうでないならfalseを返している点である．
+</p>
 
 <h3>実行例</h3>
+<h4>質問が "What is a 〜 ? " の場合</h4>
+<p>
+  プログラムの引数に "What is a Swallowtail-butterfly" を与えて実行した結果のコンソールの出力を以下に示す．
+</p>
+<pre>
+Picked up _JAVA_OPTIONS: -XX:+UseSerialGC
+Question:What is a Swallowtail-butterfly ?
+Hypothesis:[?x is a Swallowtail-butterfly]
+Success RULE
+Rule:Z4 [?x3 is a butterfly, ?x3 is yellow-and-black]->?x3 is a Swallowtail-butterfly <=> ?x is a Swallowtail-butterfly
+"a0"[shape=record,label="{Z4|if?x3 is a butterfly|?x3 is yellow-and-black|then?x3 is a Swallowtail-butterfly}"]
+newPatterns: [?x3 is a butterfly, ?x3 is yellow-and-black]
+theBinding: {?x=?x3}
+Success RULE
+Rule:Z3 [?x6 has four-wings, ?x6 has antennae, ?x6 is a insect]->?x6 is a butterfly <=> ?x3 is a butterfly
+"a2"[shape=record,label="{Z3|if?x6 has four-wings|?x6 has antennae|?x6 is a insect|then?x6 is a butterfly}"]
+newPatterns: [?x6 has four-wings, ?x6 has antennae, ?x6 is a insect]
+theBinding: {?x3=?x6, ?x=?x6}
+Success WM
+It has four-wings <=> ?x6 has four-wings
+theFired: [It has four-wings]
+tmpPoint: 2
+Success:?x6 has four-wings
+thePatterns: [?x6 has antennae, ?x6 is a insect]
+theFired: [It has four-wings, ?x6 has four-wings]
+Success WM
+It has antennae <=> ?x6 has antennae
+theFired: [It has four-wings, ?x6 has four-wings, It has antennae]
+tmpPoint: 4
+Success:?x6 has antennae
+thePatterns: [?x6 is a insect]
+theFired: [It has four-wings, ?x6 has four-wings, It has antennae, ?x6 has antennae]
+Success RULE
+Rule:Z1 [?x7 has six-legs]->?x7 is a insect <=> ?x6 is a insect
+"a7"[shape=record,label="{Z1|if?x7 has six-legs|then?x7 is a insect}"]
+newPatterns: [?x7 has six-legs]
+theBinding: {?x3=It, ?x7=It, ?x6=It, ?x=It}
+Success WM
+It has six-legs <=> ?x7 has six-legs
+theFired: [It has four-wings, ?x6 has four-wings, It has antennae, ?x6 has antennae, It has six-legs]
+Success
+Success
+tmpPoint: 13
+Success:?x3 is a butterfly
+thePatterns: [?x3 is yellow-and-black]
+theFired: [It has four-wings, ?x6 has four-wings, It has antennae, ?x6 has antennae, It has six-legs, ?x3 is a butterfly]
+Success WM
+It is yellow-and-black <=> ?x3 is yellow-and-black
+theFired: [It has four-wings, ?x6 has four-wings, It has antennae, ?x6 has antennae, It has six-legs, ?x3 is a butterfly, It is yellow-and-black]
+Success
+Yes
+{?x3=It, ?x7=It, ?x6=It, ?x=It}
+binding: {?x3=It, ?x7=It, ?x6=It, ?x=It}
+tmp: ?x, result:  It
+Query: ?x is a Swallowtail-butterfly
+Answer:It is a Swallowtail-butterfly
+theFired:[It has four-wings, ?x6 has four-wings, It has antennae, ?x6 has antennae, It has six-legs, ?x3 is a butterfly, It is yellow-and-black, It is a Swallowtail-butterfly]
+
+Answer
+Swallowtail-butterfly is a butterfly
+Swallowtail-butterfly is yellow-and-black
+</pre>
+<p>
+  なおこのとき InsectWm.data は次の通りであった．
+</p>
+<pre>
+It has six-legs
+It has four-wings
+It has horn
+It has antennae
+It has five-horn
+It is yellow-and-black
+he is flying
+he has multiple eyes
+he is red
+he has red-wings
+</pre>
+<p>
+  正しい出力が得られた．
+</p>
+
+<h4>質問が "Does 〜 have 〜 ?" の場合</h4>
+<p>
+  プログラムの引数に "Does Spangle have antennae ?" を与えて実行した結果のコンソールの出力を以下に示す．
+</p>
+<pre>
+Picked up _JAVA_OPTIONS: -XX:+UseSerialGC
+Question:Does Spangle have antennae ?
+Hypothesis:[?x is a Spangle]
+Success RULE
+Rule:Z6 [?x5 is a butterfly, ?x5 is black]->?x5 is a Spangle <=> ?x is a Spangle
+"a0"[shape=record,label="{Z6|if?x5 is a butterfly|?x5 is black|then?x5 is a Spangle}"]
+newPatterns: [?x5 is a butterfly, ?x5 is black]
+theBinding: {?x=?x5}
+Success RULE
+Rule:Z3 [?x8 has four-wings, ?x8 has antennae, ?x8 is a insect]->?x8 is a butterfly <=> ?x5 is a butterfly
+"a2"[shape=record,label="{Z3|if?x8 has four-wings|?x8 has antennae|?x8 is a insect|then?x8 is a butterfly}"]
+newPatterns: [?x8 has four-wings, ?x8 has antennae, ?x8 is a insect]
+theBinding: {?x5=?x8, ?x=?x8}
+Success WM
+It has four-wings <=> ?x8 has four-wings
+theFired: [It has four-wings]
+tmpPoint: 2
+Success:?x8 has four-wings
+thePatterns: [?x8 has antennae, ?x8 is a insect]
+theFired: [It has four-wings, ?x8 has four-wings]
+Success WM
+It has antennae <=> ?x8 has antennae
+theFired: [It has four-wings, ?x8 has four-wings, It has antennae]
+tmpPoint: 4
+Success:?x8 has antennae
+thePatterns: [?x8 is a insect]
+theFired: [It has four-wings, ?x8 has four-wings, It has antennae, ?x8 has antennae]
+Success RULE
+Rule:Z1 [?x9 has six-legs]->?x9 is a insect <=> ?x8 is a insect
+"a7"[shape=record,label="{Z1|if?x9 has six-legs|then?x9 is a insect}"]
+newPatterns: [?x9 has six-legs]
+theBinding: {?x8=It, ?x5=It, ?x=It, ?x9=It}
+Success WM
+It has six-legs <=> ?x9 has six-legs
+theFired: [It has four-wings, ?x8 has four-wings, It has antennae, ?x8 has antennae, It has six-legs]
+Success
+Success
+tmpPoint: 13
+Success:?x5 is a butterfly
+thePatterns: [?x5 is black]
+theFired: [It has four-wings, ?x8 has four-wings, It has antennae, ?x8 has antennae, It has six-legs, ?x5 is a butterfly]
+Success WM
+It is black <=> ?x5 is black
+theFired: [It has four-wings, ?x8 has four-wings, It has antennae, ?x8 has antennae, It has six-legs, ?x5 is a butterfly, It is black]
+Success
+Yes
+{?x8=It, ?x5=It, ?x=It, ?x9=It}
+binding: {?x8=It, ?x5=It, ?x=It, ?x9=It}
+tmp: ?x, result:  It
+Query: ?x is a Spangle
+Answer:It is a Spangle
+theFired:[It has four-wings, ?x8 has four-wings, It has antennae, ?x8 has antennae, It has six-legs, ?x5 is a butterfly, It is black, It is a Spangle]
+
+Answer
+Yes, it has.
+</pre>
+<p>
+  なおこのとき InsectWm.data は次の通りであった．
+</p>
+<pre>
+It has six-legs
+It has four-wings
+It has horn
+It has antennae
+It has five-horn
+It is black
+he is flying
+he has multiple eyes
+he is red
+he has red-wings
+</pre>
+<p>
+  正しい出力が得られた．
+</p>
+
+<h4>質問が "Is 〜 〜 ?" の場合</h4>
+<p>
+  プログラムの引数に "Is Dragonfly flying ?" を与えて実行した結果のコンソールの出力を以下に示す．
+</p>
+<pre>
+Picked up _JAVA_OPTIONS: -XX:+UseSerialGC
+Question:Is Dragonfly flying ?
+Hypothesis:[?x is a Dragonfly]
+Success RULE
+Rule:Z18 [?x17 has four-wings, ?x17 is a insect, ?x17 is flying, ?x17 has multiple eyes]->?x17 is a Dragonfly <=> ?x is a Dragonfly
+"a0"[shape=record,label="{Z18|if?x17 has four-wings|?x17 is a insect|?x17 is flying|?x17 has multiple eyes|then?x17 is a Dragonfly}"]
+newPatterns: [?x17 has four-wings, ?x17 is a insect, ?x17 is flying, ?x17 has multiple eyes]
+theBinding: {?x=?x17}
+Success WM
+It has four-wings <=> ?x17 has four-wings
+theFired: [It has four-wings]
+tmpPoint: 2
+Success:?x17 has four-wings
+thePatterns: [?x17 is a insect, ?x17 is flying, ?x17 has multiple eyes]
+theFired: [It has four-wings, ?x17 has four-wings]
+Success RULE
+Rule:Z1 [?x18 has six-legs]->?x18 is a insect <=> ?x17 is a insect
+"a5"[shape=record,label="{Z1|if?x18 has six-legs|then?x18 is a insect}"]
+newPatterns: [?x18 has six-legs]
+theBinding: {?x18=It, ?x=It, ?x17=It}
+Success WM
+It has six-legs <=> ?x18 has six-legs
+theFired: [It has four-wings, ?x17 has four-wings, It has six-legs]
+tmpPoint: 13
+Success:?x17 is a insect
+thePatterns: [?x17 is flying, ?x17 has multiple eyes]
+theFired: [It has four-wings, ?x17 has four-wings, It has six-legs, ?x17 is a insect]
+Success WM
+It is flying <=> ?x17 is flying
+theFired: [It has four-wings, ?x17 has four-wings, It has six-legs, ?x17 is a insect, It is flying]
+tmpPoint: 7
+Success:?x17 is flying
+thePatterns: [?x17 has multiple eyes]
+theFired: [It has four-wings, ?x17 has four-wings, It has six-legs, ?x17 is a insect, It is flying, ?x17 is flying]
+Success WM
+It has multiple eyes <=> ?x17 has multiple eyes
+theFired: [It has four-wings, ?x17 has four-wings, It has six-legs, ?x17 is a insect, It is flying, ?x17 is flying, It has multiple eyes]
+Success
+Success
+Success
+Yes
+{?x18=It, ?x=It, ?x17=It}
+binding: {?x18=It, ?x=It, ?x17=It}
+tmp: ?x, result:  It
+Query: ?x is a Dragonfly
+Answer:It is a Dragonfly
+theFired:[It has four-wings, ?x17 has four-wings, It has six-legs, ?x17 is a insect, It is flying, ?x17 is flying, It has multiple eyes, It is a Dragonfly]
+
+Answer
+Yes, it is.
+</pre>
+<p>
+  なおこのとき InsectWm.data は次の通りであった．
+</p>
+<pre>
+It has six-legs
+It has four-wings
+It has horn
+It has antennae
+It has five-horn
+It is yellow-and-black
+It is flying
+It has multiple eyes
+he is flying
+he has multiple eyes
+he is red
+he has red-wings
+</pre>
+<p>
+  正しい出力が得られた．
+</p>
+
+<h4>質問が "How many 〜 does 〜 have ?" の場合</h4>
+<p>
+  プログラムの引数に "How many legs does spider have ?" を与えて実行した結果のコンソールの出力を以下に示す．
+</p>
+<pre>
+Picked up _JAVA_OPTIONS: -XX:+UseSerialGC
+Question:How many legs does spider have ?
+Hypothesis:[?x is a spider]
+Success RULE
+Rule:Z8 [?x7 has eight-legs, ?x7 has silk]->?x7 is a spider <=> ?x is a spider
+"a0"[shape=record,label="{Z8|if?x7 has eight-legs|?x7 has silk|then?x7 is a spider}"]
+newPatterns: [?x7 has eight-legs, ?x7 has silk]
+theBinding: {?x=?x7}
+Success WM
+It has eight-legs <=> ?x7 has eight-legs
+theFired: [It has eight-legs]
+tmpPoint: 1
+Success:?x7 has eight-legs
+thePatterns: [?x7 has silk]
+theFired: [It has eight-legs, ?x7 has eight-legs]
+Success WM
+It has silk <=> ?x7 has silk
+theFired: [It has eight-legs, ?x7 has eight-legs, It has silk]
+Success
+Yes
+{?x7=It, ?x=It}
+binding: {?x7=It, ?x=It}
+tmp: ?x, result:  It
+Query: ?x is a spider
+Answer:It is a spider
+theFired:[It has eight-legs, ?x7 has eight-legs, It has silk, It is a spider]
+
+Answer
+It has eight legs.
+</pre>
+<p>
+  なおこのとき InsectWm.data は次の通りであった．
+</p>
+<pre>
+It has eight-legs
+It has silk
+It is yellow-and-black
+It is flying
+It has multiple eyes
+he is flying
+he has multiple eyes
+he is red
+he has red-wings
+</pre>
+<p>
+  正しい出力が得られた．
+</p>
+
+
 <h2>課題6-3</h2>
 <!-- 以下，上記と同様 -->
 [必須課題6-3] 上記6-2で実装した質問応答システムのGUIを作成せよ．
@@ -322,6 +1274,29 @@ CarRule1,CarRule2,CarRule3それぞれトリガは起こるが、全てのルー
 
 </p>
 </br>
+<b>課題6-2 後向き推論</b><br>
+<h3>グループ課題における分担</h3>
+<p>
+  今回，知能プログラミング演習Ⅱでは初となるグループ課題であった．そのためチームの4人で課題を分担することになったが，まず課題をどのように分ければよいのか決めるのが難しかった．幸い，希望を出したグループで組むことができたため，メンバーのある程度の力量が把握できていたので，それぞれが得意とする課題を取り組むこととした．その甲斐あってか，初のグループ課題にしてはかなり上手くまとまったように感じる．今後，1つのプロジェクトに対して数名，数十名で取り組む機会もあると思うが，その際はメンバーそれぞれの得意分野を担当することが1つの策であることを発見することができた．
+</p>
+<h3>ソースコードの移植と他のメンバーへの考慮</h3>
+<p>
+  また，グループのメンバーで課題を分担すると，必然的にコードを共有することになる．そのことに課題を取り組む前に気づくことができたため，例えばメソッドの引数をどんなものにするとか，プログラムの設計をきちんとメンバーと話し合った上でそれぞれが課題に取り組んだ．この手法は素晴らしいと言える．もしプログラムの設計をメンバー間で共有できていないと，メンバーそれぞれのコーディングの癖が出てしまうため，あるメンバーが書いたコードを他のメンバーが書くコードに移植することが難しくなってしまう．さらに今回の課題についてはコードの記述の際にコンソールへの出力やコメントアウトをより多くするように意識した．コンソールへの出力が多ければ他のメンバーがプログラムの動作を把握しやすくなるし，コメントアウトが多ければ他のメンバーがソースコードを読みやすくなるといったメリットがある．グループ課題のスタートはこの知能プログラミング演習Ⅱで常に意識してきたことをより意識するようになるいいきっかけとなった．
+</p>
+<h3>GitHubの有効活用</h3>
+<p>
+  さらに，今回の必須課題6-4について自分たちのグループは成果物共有のためにGitHubを使用することにした．ただ，グループのメンバー全員がGitやGitHubについて理解しようとすると，かなり時間を使ってしまいもったいなかったので，自分が理解することにした．そしてGitのことを理解していない人でもGitHubを簡単に使えるようにした．具体的にはグループのメンバー全員がレポジトリの作成，変更，clone，pull，pushの操作をできるようにした．そうすることによりわざわざグループのOwnerがMemberの操作を承認しなくてもよくなるため楽になる．また，各自が作成したレポートも，GitHubでレポジトリを作成してそこに上げるようにすることにより，グループのレポートをまとめるのがスムーズになった．グループ課題に取り組む上で，メンバー全員がソースコードやレポートを書くため，そのような設定とした．グループ課題への取り組み方を理解した良いGitHubの使い方と言える．
+</p>
+<h3>try-catch構文の使用</h3>
+<p>
+  後向き推論を行っていき，発火するアサーションがない場合にNullPointerExceptionが発生してしまうというエラーが起きた．ただプログラムを実行する場合はコンソールでの確認が可能だが，GUI上で実行した場合は確認が不可能である．そのため，try-catch構文を使用してNullPointerExceptionが発生する場合のエラー処理を行った．具体的には RuleBaseSystem クラスの backward() メソッドでtry-catch構文を使用している．以前の課題で学習したことをGUIへの対応に活かした良い手法と言える．
+</p>
+<h3>推論過程の可視化</h3>
+<p>
+  今回はできなかったが，更に推論過程の出力をよりわかりやすいものにすべきである．今回はGraphVizを使用してpngファイルを作成するのみであったが，例えば後向き推論で検証する仮説から適応されるルールやアサーションをアニメーションで表示していくなんて手法も考えられる．調べたところJavaでアニメーションを使用することができるようなので，時間があるときに取り組みたい．かなり難しそうだったため，実際に取り組む際はそれなりに覚悟を決めてアニメーションを実現させたい．
+</p>
+
+
 </br>
 </br>
 <b>課題6-4</b></br>
@@ -349,6 +1324,10 @@ Githubは、グループを作成しそのなかでファイルを管理する�
 <p>
 今までの個人課題と比べて躓いたときに相談、協力しあえた分精神的にも良い環境で課題を進めることができた。またクオリティも個人課題と比べて高いものができたと思う。27115157
 </p>
+<p>
+グループで1つの課題に取り組むことは知能プログラミング演習Ⅱでは初であったため，課題の分担やソースコードの共有等にかなり苦戦した．どのようにメンバー全員で課題に取り組めば手早く，個人のストレスが無いように課題を進められるのかを模索しながら，今後の課題に取り組んでいきたい．27115076
+</p>
+
 
 
 <h2>参考文献</h2>
@@ -357,6 +1336,7 @@ Githubは、グループを作成しそのなかでファイルを管理する�
 <ul>
   <li>グループ3のメンバー</li>
   <li>新谷虎松 著（19XX）『知能プログラミング入門』コロナ社</li>
+  <li>『サルでもわかるGit入門』(https://www.backlog.jp/git-guide/)</li>
 </ul>
 
 </body>
