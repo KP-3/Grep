@@ -64,7 +64,10 @@
 
 <h2>ソースファイル</h2>
 <ul>
-  <li><a href="../../Grep6/src/RuleBaseSystem.java">RuleBaseSystem.java</a>
+  <li><a href="./QandAGUI.java">QandAGUI.java</a>
+  <li><a href="./GraphViz.java">GraphViz.java</a>
+  <li><a href="./RuleBaseSystem.java">RuleBaseSystem.java</a>  
+  <li><a href="./BackwardRuleBaseSystem.java">BackwardRuleBaseSystem.java</a>
     <!-- 実装・変更したソースファイルへのリンク．修正する． -->
     <!-- ※ リンクは絶対パスに変更せず，上記のような相対パスのままで！ -->
 </ul>
@@ -1882,21 +1885,187 @@ Unifierクラスは課題6-2で説明したものとだいたい同じなので�
 次に後ろ向き推論では<br>
 <img src="6.png"><br>
 このように正しく動いていることがわかる。<br>
+<h3>GUI実装部分について</h3>
 <h3>独自仕様の説明</h3>
+質疑応答のGUIを実装するにあたって、以下の機能を持たせた。<br>
+<ul>
+<li>アサーション一覧を記述したファイルの読み込みおよび書き込み
+<li>ルール一覧を記述したファイルの読み込みおよび書き込み
+<li>ルール、アサーション一覧を表示
+<li>質問を入力し、Goボタンを押すと下の欄に推論の過程をグラフで表した図と結果をテキストエリアに出力する。
+<li>エラーメッセージをダイアログとして表示させる。
+</ul>
+
 <h3>プログラムの構造</h3>
+<p>
+	前向き後ろ向き推論を用いた質疑応答システムのGUIをQandAGUI.javaで実装した。
+	JFrameを継承し、ActionListenerのインターフェースを実装したQandAGUIクラスには、まず
+	メンバ変数としてGUIを実際に構成しているボタンやラベル、テキストエリアが宣言されており、
+	コンストラクタ内で配置が行われている。
+</p>
+<p>
+	また、actionPerformedメソッドでは各ボタンが押された際の挙動を記述している。
+</p>
 <h3>実装の説明</h3>
 <!--
   ソースコードをはりつける時は <pre> タグを使う
   class="brush: java" でシンタックスハイライトする
   重要な部分のみを貼り付ければ良い
 -->
-<pre class="brush: java">
+<p>
+	まず、メンバ変数として<br>
+	<ul>
+		<li>ルール一覧を保存しておく文字列のアレイリストrulelist</li>
+		<li>アサーション一覧を保存しておく文字列のアレイリストaslist</li>
+		<li>アサーション一覧を表示するテキストエリアas</li>
+		<li>asの内容をファイルに保存するためのボタンassave</li>
+		<li>ファイルの内容をasに表示させるためのボタンasload</li>
+		<li>アサーションが記述されたファイル名を書くためのテキストフィールドasfilename</li>
+		<li>ルールが記述されたファイル名を書くためのテキストフィールドrulefilename</li>
+		<li>ruleの内容をファイルに保存するためのボタンrulesave</li>
+		<li>ファイルの内容をruleに表示させるためのボタンruleload</li>
+		<li>ルール一覧を表示するテキストエリアrule</li>
+		<li>質問文を入力するためのテキストフィールドquery</li>
+		<li>質疑応答を行うためのボタンGo</li>
+		<li>ファイル名に関するエラーメッセージをポップアップで表示するダイアログdialog
+		<li>ダイアログを消すためのボタンok
+		<li>どの類のエラーか出力するラベルerror
+		<li>推論結果のグラフを出力するためのラベルImg
+		<li>推論結果を出力するためのテキストエリアanswer
+		<li>前向き推論で推論後のワーキングメモリをどのファイルに書き込んだか表示するラベルafter
+			</ul>
+が定義されている。<br>
+そして実際のレイアウトでは、今回はGridBagLayoutを用いて設計を行った。<br>
+GridBagLayoutは従来のGridLayoutのようにあらかじめベースとなるパネルをいくつかに分割しておいてからパーツの配置を行っていくが、GridBagLayoutはパーツを配置するときにパネルを動的に分割していくためより柔軟な配置が出来るようになっている。<br>
+gridx,gridyで配置する行と列を設定、weightx,weightyで他のパーツとの横、縦の比率を決める。<br>
+P2パネルはアサーションファイルとルールファイルの領域で、アサーションファイルの領域はP5パネルで囲われている。その下の質問を入力してGoボタンが設置されている部分がP3パネルで、推論結果のグラフと答えを表示する領域をP4パネルとして作っている。<br>
+P4パネルはBorderLayoutを用いて配置を行い、dialogにokボタンとerrorラベルを配置するのにもBorderLayoutを利用した。<br>
+</p>
+<p>
+次にactionPerformedメソッドについて、まずrulesaveボタンが押されたとき<br>
+<pre class="brush: java">if(event.getSource() == rulesave){
 
+            if(rulefilename.getText().equals("")){
+                error.setText("Please write rulelist-filename");
+                dialog.setVisible(true);
+            }else{
+                try{
+                    String filename = rulefilename.getText();
+                    BufferedWriter in = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(filename),"UTF-8"));
+                    String[] s = rule.getText().split("\n");
+                    for(String str: s){
+                        rulelist.add(str);
+                    }
+                    for(String str: rulelist){
+                        in.write(str);
+                        in.newLine();
+                    }
+                    in.close();
+                }catch(IOException e){
+                    error.setText("Error!!");
+                    dialog.setVisible(true);
+                }
+            }</pre>
+まずファイル名が何も書かれていないときはダイアログにファイル名を書くように促す文を設定しダイアログを表示させる。<br>
+ファイル名が書かれている場合はルール一覧が表示されているテキストエリアから文字列を取得しそれをファイルに書き込んでいく、このときrulelistがbufferのような役割をしている。<br>
+次にruleloadボタンが押されたとき、<br>
+<pre class="brush: java">
+else if(event.getSource() == ruleload){
+            if(rulefilename.getText().equals("")){
+                error.setText("Please write rulelist-filename");
+                dialog.setVisible(true);
+            }else{
+                try{
+                    String filename = rulefilename.getText();
+                    BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(filename),"UTF-8"));
+                    for (String line = in.readLine();line != null;line = in.readLine()){
+                        rulelist.add(line);
+                    }
+                    for(String s: rulelist){
+                        rule.append(s+"\n");
+                    }
+                }catch (IOException e){
+                    error.setText("File is not exist");
+                    dialog.setVisible(true);
+                }
+            }
 </pre>
+これも同じようにファイル名が書かれていなかったらその旨を伝えるダイアログを表示させる。<br>
+ファイル名が取得できたら、そのファイルを一行ずつ読み込み一度rulelistに全て保持しておきその後テキストエリアへと移す。<br>
+assaveボタンとasloadボタンが押されたときの挙動は全く同じなので省略する。
+</p>
+<p>
+Goボタンが押されたときは、まずルール一覧が記述されているファイル名、ワーキングメモリが記述されているファイル名、質問をそれぞれ取得する。<br>
+そのあと、質問が"What is this?"だったら前向き推論、それ以外の質問の場合は後ろ向き推論の分岐をする。<br>
+以下のソースが前向き推論に当たる部分で、前向き推論の結果がansにはいっており、makegraphで推論過程を"forward.png"として画像で保存する。<br>
+得られた画像を0.5倍に縮小してImgラベルに貼りGUIに出力する。<br>
+またansの内容をテキストエリアであるanswerに一行ずつ移し、推論後のワーキングメモリを推論前のワーキングメモリが保存されているファイル名+"-after.txt"に書き込んでいる。。
+<pre class="brush: java">
+if(que.equals("What is this?")){
+                    ArrayList<String> ans = RuleBaseSystem.question(assertion,rule,que,filename);
+                    RuleBaseSystem.makegraph();
+                    ImageIcon icon = new ImageIcon("./forward.png");
+                    Image small = icon.getImage().getScaledInstance((int)(icon.getIconWidth()*0.5), (int)(icon.getIconHeight()*0.5), Image.SCALE_SMOOTH);
+                    ImageIcon smallIcon = new ImageIcon(small);
+                    Img.setIcon(smallIcon);
+                    for(String s: ans){
+                    	answer.append(s+"\n");
+                    }
+                    after.setText(filename+"に推論後のワーキングメモリを保存しました。");
+                    }</pre>
+次に後ろ向き推論だが、今回は４つのパターンの質問に答えられる仕様になっているため
+まずパターンマッチングを行い自然言語の質問を対応する変数を用いた質問に変換し、初めの仮説とする。<br>
+そしてこれも後ろ向き推論を行いその結果をansに入れ推論過程をmakegraphで"back1.png"に画像として保存する。<br>
+それ以降の処理は前向き推論の時と同じである。
+<pre class="brush: java">
+      	Pattern pat1 = Pattern.compile("What is [a-z]*");
+                        Matcher mat1 = pat1.matcher(que);
+                        Pattern pat2 = Pattern.compile("Does [a-zA-Z]* have [a-z]*");
+                        Matcher mat2 = pat2.matcher(que);
+                        Pattern pat3 = Pattern.compile("Is [a-zA-Z]* [a-z]*");
+                        Matcher mat3 = pat3.matcher(que);
+                        Pattern pat4 = Pattern.compile("How many [a-z]* does [a-zA-Z]* have");
+                        Matcher mat4 = pat4.matcher(que);
+                        String hypothesis = null;
+                        String subject = null;
+                        String object = null;
+                        int mode = 0;
+                        if (mat1.find()) { // What is ~ ? ifのアサーションを全て出力
+                            subject = que.substring(8, que.length() - 2);
+                            hypothesis = "?x is " + subject;
+                            mode = 1;
+                        } else if (mat2.find()) { // Does ~ have ~ ?
+                            subject = que.substring(5, que.indexOf("have") - 1);
+                            hypothesis = "?x is a " + subject;
+                            object = que.substring(que.indexOf("have") + 5);
+                            que = " has " + object;
+                            mode = 2;
+                        } else if (mat3.find()) { // Is ~ ~ ?
+                            subject = que.substring(3).substring(0, que.substring(3).indexOf(" "));
+                            hypothesis = "?x is a " + subject;
+                            object = que.substring(3).substring(que.substring(3).indexOf(" "));
+                            que = " is a" + object;
+                            mode = 3;
+                        } else if (mat4.find()) { // How many ~ does ~ have ?
+                            subject = que.substring(que.indexOf("does") + 5, que.indexOf("have") - 1);
+                            hypothesis = "?x is a " + subject;
+                            object = que.substring(9, que.indexOf("does") - 1);
+                            que = " has " + object;
+                            mode = 4;
+                        }
+                        ArrayList<String> ans = BackwardRuleBaseSystem.backward(assertion, rule, hypothesis, que, mode);
+                        BackwardRuleBaseSystem.makegraph();
+                        ImageIcon icon = new ImageIcon("./back1.png");</pre>
+</p>
 
 
 <h3>実行例</h3>
-
+<!-- 実行例を示す．PNGやGIF等の絵を張っても良い．-->
+<h4>前向き推論の結果</h4>
+<!-- 画像ファイルを貼る場合は <img> タグを使う -->
+<img src="./forward.png" width="30%" height="30%" />
+<h4>後ろ向き推論の結果</h4>
+<img src="./back.png" width="30%" height="30%" />
 <h2>課題6-4</h2>
 <!-- 以下，上記と同様 -->
 [必須課題6-4] グループでの進捗管理や成果物共有などについて，工夫した点や使ったツールについて，グループ作成書類で考察せよ．
@@ -1920,19 +2089,13 @@ Unifierクラスは課題6-2で説明したものとだいたい同じなので�
 <!-- 以下，上記と同様 -->
 [発展課題6-5] 上記6-3で実装したGUIを発展させ，質問応答だけでなく，ルールの編集（追加，削除，変更）などについてもGUIで行えるようにせよ． 
 <h3>独自仕様の説明</h3>
+今回、ルールの追加編集削除の実装方法として、GUIのテキストエリアにルールを表示させ、そこにユーザが直接ルールを書き加えたり削除して、saveボタンを押すことでルールを上書きするという手法をとった。
 <h3>プログラムの構造</h3>
+課題6-3において説明したため省略
 <h3>実装の説明</h3>
-<!--
-  ソースコードをはりつける時は <pre> タグを使う
-  class="brush: java" でシンタックスハイライトする
-  重要な部分のみを貼り付ければ良い
--->
-<pre class="brush: java">
-
-</pre>
-
-
+課題6-3において説明したため省略
 <h3>実行例</h3>
+省略
 <h2>考察</h2>
 <!--
  考察を書く．PNGやGIF等の絵を張っても良い．
@@ -2049,6 +2212,15 @@ gv.addln("c->f");
 ラベルをキーにして変数名をハッシュ値に設定することですぐに同じラベルをもつ変数名を呼び出すことができるようになった。<br>
 前向き推論ではアサーションから発火したルールなどノード関係が消えることはないが後ろ向き推論では失敗した場合に少し前までノード関係を戻す必要があった。<br>
 そのためArrayListを何種類も用意することで対応した。<br>
+<b>課題6-3GUI,課題6-5</b><br>
+<p>
+今回初めてGridBagLayoutなるものをレイアウトに用いてみたが、柔軟な配置が出来る代わりにその分多くのパラメータを変化させなければならないため、GridLayoutとは一長一短でパーツが余り多くないならばGridLaytout,パーツが多いときはGridBagLayoutといった風に適切に使い分けていく必要があると考える。<br>
+GUIで工夫した点としては、ファイルのセーブロードの際のエラーメッセージを別ウィンドウで表示させるようにしたことである。この方がユーザがどんなエラーなのか知りやすくどこを直せばいいのかが明解だと思いこの仕様にした。<br>
+他にもルールとアサーションの一覧を表示するテキストエリアには、行数が膨大になってもウィンドウサイズが変えなくてもいいようにスクロールバーを設置した。<br>
+今回はユーザにとって使いやすさと見やすさをなるべく両立できるようなGUIを目指して設計した。<br>
+また発展課題6-5において、ルールの追加・編集・削除の機能追加をテキストエリアで直接変化を加える仕様にしたが、推論にルールとアサーションのファイル名を引数として用いるためloadボタンを押してファイルの内容を更新してから推論を行う必要がある。<br>
+追加・編集・削除のボタンを追加配置した方がわかりやすいとは思ったが、これ以上レイアウトが複雑になるときれいなGUIを保つことが難しいと判断して今回の実装方法にした。<br> 
+</p>
 <b>課題6-4</b></br><p>グループ3では、進捗管理等をLINEを使って管理し、データ、プログラム等の共有をGitHubを用いて管理することにした。</br></p><p>
 LINEを用いる理由は、
 <li>文章で共有する情報は使い慣れているLINEで十分</li>
@@ -2090,8 +2262,9 @@ Githubは、グループを作成しそのなかでファイルを管理する�
 どう考えても後ろ向き推論にしかならないような気がした。<br>
 なのでデータの内容を考えてうまくいくようにした。<br>
 データを作る部分では自分はルール5つほどしか作成しなかったのでもう少し貢献したかった。<br>
-
-
+<b>27115077</b><br>
+<p>GridBagLayoutの配置のチューニングがとにかく面倒だった。少しパラメータがずれるとレイアウトが崩れるのでとても時間が掛かった。<br>
+パーツの配置部分のソースがかなり煩雑になってしまって読みにくくなっているのは反省したい。</p>
 <h2>参考文献</h2>
 <!-- 参考文献を書く．助けてもらった人がいれば，それも書く-->
 
@@ -2101,6 +2274,7 @@ Githubは、グループを作成しそのなかでファイルを管理する�
   <li>『サルでもわかるGit入門』(https://www.backlog.jp/git-guide/)</li>
   <li>http://zero-config.com/java/string_split.html 最終アクセス日11月30日</li>
 <li>http://www.kenmiya.info/?p=115 最終アクセス日11月30日</li>
+	<li><a href="https://www.javadrive.jp/tutorial/jframe/">JavaDrive最終アクセス12月3日</a></li>
 </ul>
 
 </body>
