@@ -1,0 +1,138 @@
+rule   "Z1"
+if     "?x has six-legs"
+then   "?x is a insect"
+
+rule   "Z2"
+if     "?x has wings"
+       "?x has horn"
+       "?x is a insect"
+then   "?x is a Beetle"
+
+rule   "Z3"
+if     "?x has four-wings"
+       "?x has antennae"
+       "?x is a insect"
+then   "?x is a Butterfly"
+
+rule   "Z4"
+if     "?x is a Butterfly"
+       "?x is yellow-and-black"
+then   "?x is a Swallowtail-butterfly"
+
+rule   "Z5"
+if     "?x is a Butterfly"
+       "?x is white"
+then   "?x is a Cabbage-butterfly"
+
+rule   "Z6"
+if     "?x is a Butterfly"
+       "?x is black"
+then   "?x is a Spangle"
+
+rule   "Z7"
+if     "?x has four-wings"
+       "?x is yellow-and-black"
+       "?x has needle"
+then   "?x is a Bee"
+
+rule   "Z8"
+if     "?x has eight-legs"
+       "?x has silk"
+then   "?x is a Spider"
+
+rule   "Z9"
+if     "?x is a Beetle"
+       "?x is the biggest in Asia"
+       "?x is black"
+then   "?x is a Chalcosoma-caucasus"
+
+rule   "Z10"
+if     "?x is a Beetle"
+       "?x has five-horn"
+then   "?x is a Eupatorus-gracilicornis"
+
+rule   "Z11"
+if     "?x is a Beetle"
+       "?x is Ocher"
+then   "?x is a Allomyrina-pfeifferi"
+
+rule   "Z12"
+if     "?x is a Beetle"
+       "?x is the heaviest"
+then   "?x is a Megasoma-elephas"
+
+rule   "Z13"
+if     "?x is a Beetle"
+       "?x is white or yellow"
+then   "?x is a Dynastes-hyllus" 
+
+rule   "Z14"
+if     "?x is a Beetle"
+       "?x is the biggest in the world"
+then   "?x is a Dynastes-hercules-hercules"
+
+rule   "Z15"
+if     "?x is a Megasoma-elephas"
+       "?x is black"
+then   "?x is a Megasoma-mars"
+
+rule   "Z16"
+if     "?x is a Megasoma-elephas"
+       "?x is white or yellow"
+then   "?x is a Megasoma-occidentalis"
+
+rule   "Z17"
+if     "?x is a Beetle"
+       "?x is bigger than Chalcosoma atlas"
+       "?x is smaller than Chalcosoma caucasus"
+then   "?x is a Chalcosoma-moellenkampi"
+
+rule   "Z18"
+if     "?x has four-wings"
+       "?x is a insect"
+       "?x is flying"
+       "?x has multiple eyes"
+then   "?x is a Dragonfly"
+
+rule   "Z19"
+if     "?x is a Dragonfly"
+       "?x is yellow and black"
+       "?x looks like demon-pants"
+then   "?x is a Anotogaster-sieboldii"
+
+rule   "Z20"
+if     "?x is a Dragonfly"
+       "?x is green and silver"
+then   "?x is a Anax-parthenope"
+
+rule   "Z21"
+if     "?x is a Dragonfly"
+       "?x is red"
+then   "?x is a Akatonbo"
+
+rule   "Z22"
+if     "?x is a Dragonfly"
+       "?x is blue"
+then   "?x is a Orthetrum-albistylum-speciosum"
+
+rule   "Z23"
+if     "?x is a Dragonfly"
+       "?x has black wings"
+then   "?x is a Atrocalopteryx-atrata"
+
+rule   "Z24"
+if     "?x is a Dragonfly"
+       "?x has butterfly-wings"
+then   "?x is a Rhyothemis-fuliginosa"
+
+rule   "Z25"
+if     "?x is a Akatonbo"
+       "?x is seen in autumn"
+then   "?x is a Sympetrum-frequens"
+
+rule   "Z26"
+if     "?x is a Akatonbo"
+       "?x has red-wings"
+then "?x is a Sympetrum-pedemontanum-elatum"
+
+
