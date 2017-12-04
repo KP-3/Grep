@@ -58,7 +58,7 @@
 <ul>
 <li>鈴木祥太 27115076</a>: 課題6-2担当，</li>
 <li>鈴木進也 27115077</a>: 課題6-3 ,課題6-5 GUI実装担当</li>
-<li>丹羽貴敏 27115120</a>: 課題6-2担当，</li>
+<li>丹羽貴敏 27115120</a>: 課題6-2担当，課題6-3推論過程担当</li>
 <li>横尾由春 27115157</a>: 課題6-1 ,課題6-4担当</li>
 </ul>
 
@@ -213,10 +213,347 @@ CarRule1,CarRule2,CarRule3それぞれトリガは起こるが、全てのルー
 <h2>課題6-2</h2>
 <!-- 以下，上記と同様 -->
 [必須課題6-2] CarShop.data , AnimalWorld.data 等のデータファイルを実際的な応用事例に書き換えて，前向き推論，および後ろ向き推論に基づく質問応答システムを作成せよ．どのような応用事例を扱うかは，メンバーで話し合って決めること．
-なお，ユーザの質問は英語や日本語のような自然言語が望ましいが，難しければ変数を含むパターン等でも可とする．
-<後向き推論>
+なお，ユーザの質問は英語や日本語のような自然言語が望ましいが，難しければ変数を含むパターン等でも可とする．<br>
+<前向き推論><br>
+  <h3>独自仕様の説明</h3>
+<!--
+ もし自分で独自に決めた仕様があれば，その説明を書く．
+-->
+ForwardChainを担当した。<br>
+今回のデータファイルは虫としたので虫の特徴を「It is ○○」の形式でいれてもらい「What is this?」と質問してもらうと該当する虫の名前を返すものである。<br>
+第1引数はアサーションのファイル名を入力する。<br>
+第2引数はルールのファイル名を入力する。<br>
+第3引数は質問を入力する。<br>
+第4引数は推論後のワーキングメモリを保存するファイル名を入力する。<br>
+<h3>プログラムの構造</h3>
+<!--  どのような設計をしたか．-->
+RuleBaseSystemクラスではquestionメソッドが定義されている。<br>
+questionメソッドでは引数でアサーションのファイル名、ルールのファイル名、質問内容、前向き推論後のワーキングメモリを保存するファイル名をとり答えをリスト型で返す。<br>
+WorkingMemoryクラスではmatchinAssertionsメソッド、matchableメソッド、addAssertionメソッド、containsメソッド、toStringメソッドが定義されている。<br>
+matchingAssertionsメソッドでは新しくArrayListを作成してmatchableメソッドを実行する。<br>
+matchableメソッドでは引数にArrayList2つとint型の変数をとりマッチするアサーションに対するバインディング情報を再帰的にもとめて返す。<br>
+addAssertionメソッドでは引数にString型をとり、アサーションをワーキングメモリに加えている。<br>
+containsメソッドでは引数にString型をとり、アサーションがすでに含まれていればtrue、含まれていなければfalseを返す。<br>
+toStringメソッドではワーキングメモリの情報を返す。<br>
+RuleBaseクラスではforwardChainメソッド、instantiateメソッド、varメソッド、loadRulesメソッドが定義されている。<br>
+コンストラクタの引数があるほうでは引数のファイルからルールを読み込んでいる。<br>
+forwardChainメソッドでは前向き推論を行っている。<br>
+instantiateメソッドでは与えられた文字列を変数束縛み従って具体化している。<br>
+varメソッドでは引数の先頭の文字が?ならtrueを返す。<br>
+loadRulesメソッドでは引数のファイルからルールを読み出している。<br>
+RuleクラスではgetNameメソッド、toStringメソッド、getAntecedentsメソッド、getConsequentメソッドが定義されている。<br>
+getNameメソッドではルールの名前を返す。<br>
+toStringではルールをString形式で返す。<br>
+getAntecedentsメソッドではルールの前件を返す。<br>
+getConsequentメソッドではルールの後件を返す。<br>
+Matcheクラスではmatchingメソッドが2つ、tokenMatchingメソッド、varMatchingメソッド、varメソッドが定義されている。<br>
+matchingメソッドの引数が3つのとき、ハッシュマップを継続させてmatchingを行っている。2つのときはマッチングできるか調べている。<br>
+tokenMatchingメソッドではトークンが等しければtrue、トークンのどちらかが変数ならvarMatchingを行っている。<br>
+varMatchingメソッドではハッシュマップに変数の値があってそれがトークンと等しければtrue、等しくなければfalse、変数の値がなければハッシュマップの更新を行っている。<br>
+varメソッドではトークンが?で始まればtrueを返す。<br>
+Unifyクラスではmatchメソッドが定義されている。<br>
+matchメソッドでは再帰を用いてファイルの中身とパターンをマッチングして変数束縛を求めている。<br>
+Unifierクラスではunifyメソッド、tokenMatchingメソッド、varMatchingメソッド、replaceBufferメソッド、replaceBindingsメソッド、varメソッドが定義されている。<br>
+unifyメソッドは2種類ある。<br>
+引数を３つとるものはハッシュマップを継続してunifyを呼び出している。<br>
+引数を2つとるものは2つの引数がマッチングできればtrueを、できなければfalseを返す。<br>
+tokenMatchingメソッドは引数のtokenに応じてtrueかfalseを返す。<br>
+varMatchingメソッドはマッチングの処理を行っている。<br>
+replaceBufferメソッドはbufferの中身を書き換えている。<br>
+replaceBindingsメソッドはハッシュマップに値をいれている。<br>
+varメソッドは?から始まっていたらtrueそうでなければfalseを返す。<br>
+<h3>実装の説明</h3>
+<!--
+ どう実装したか，ソースコードを詳細に説明する．
+ 特に重要な箇所はレポートにペーストして説明する．
+-->
+RuleBaseSystemクラスのquestionメソッドでは
+<pre class="brush:java">
+		Pattern pat = Pattern.compile("What is this?");
+		java.util.regex.Matcher mat = pat.matcher(que);
+		if(mat.find()){
+		 pattern[1] ="It is a ?x";
+		}
+		else{
+			ArrayList&ltString&gt list= new ArrayList&ltString&gt();
+			list.add("differnt question type");
+			return list;
+		}
+</pre>
+ここでは正規表現を用いて質問形式があっているか調べている。<br>
+質問形式があっていれば変数をつかった質問をパターンに保存する。<br>
+あっていなければそのことをリストに格納して返す。<br>
+<pre class="brush:java">
+try { // ファイル読み込みに失敗した時の例外処理のためのtry-catch構文
+			// 文字コードを指定してBufferedReaderオブジェクトを作る
+			BufferedReader in = new BufferedReader(new InputStreamReader(
+					new FileInputStream(fileName), "UTF-8"));
+			// 変数lineに1行ずつ読み込むfor文
+			for (String line = in.readLine(); line != null; line = in
+					.readLine()) {
+				rb.wm.addAssertion(line);// アサーションの追加
+			}
+
+		} catch (IOException e) {
+			e.printStackTrace(); // 例外が発生した所までのスタックトレースを表示
+		}
+	rb.forwardChain();
+</pre>
+ここではファイルから1行ずつよみこんでアサーションを追加している。<br>
+追加し終わったら前向き推論を行っている。<br>
+<pre class="brush:java">
+	try {		
+		File file = new File(memo);
+		file.createNewFile();
+		if (checkBeforeWritefile(file)) {
+			PrintWriter pw = new PrintWriter(new BufferedWriter(
+					new FileWriter(file)));
+			for (String line : rb.wm.assertions) {
+				pw.println(line);// 前向き推論で得られたアサーションをファイルに書き込む
+			}
+			pw.close();
+</pre>
+ここでは前向き推論によって最終的に得られたワーキングメモリを1つずつファイルに書き込んでいる。<br>
+<pre class="brush:java">
+Unify.match(memo, pattern, 1,new HashMap&ltString, String&gt(), pattern.length);
+</pre>
+ここでワーキングメモリと質問文のマッチングを行っている。<br>
+マッチングが成功したかどうかはUnifyのansListのサイズでわかるのでif文でわけている。<br>
+マッチングが成功した、つまりansListのサイズが0ではないとき
+<pre class="brush:java">
+					String[] one = Unify.ansList.toString().split("");
+				  	boolean front =false;
+				  	String ans1="";
+				  	ArrayList&ltString&gt answer=new ArrayList&ltString&gt();
+				  	for(String l:one){
+				  		if(l.equals(")")){
+				  			answer.add(ans1);
+				  			front =false;
+				  			ans1="";
+				  		}
+				  		if(front){
+				  			ans1+=l;
+				  		}
+				  		if(l.equals("(")){
+				  		front =true;
+				  		}
+				  	}
+</pre>
+まずansListをsplitを用いて1文字ずつの配列に分解する。<br>
+for文の中では()の中身を取り出してArrayListに保存している。<br>
+<pre class="brush:java">
+				  	if(answer.size()==0){
+				  		
+				  	}
+				  	else{
+				  		for(String list:answer){
+				  			if( Character.isUpperCase( list.charAt( 0 ) ) ) {//大文字なら
+				  		  		ans.add("It is a "+list);
+				  			}
+				  		}
+				  	}
+</pre>
+答えが見つからなければスルーして、もし見つかれば順に取り出して大文字から始まったら答えであるので答えであるということをArrayListに追加する。<br>
+WorkingMemoryクラスのmatchableメソッドは課題6-3のほうで説明する。<br>
+RuleBaseクラスのforwardChainメソッドも課題6-3のほうで説明する。<br>
+instantiateメソッドでは
+<pre class="brush:java">
+		StringTokenizer st = new StringTokenizer(thePattern);
+		for (int i = 0; i < st.countTokens();) {
+			String tmp = st.nextToken();
+			if (var(tmp)) {
+				result = result + " " + (String) theBindings.get(tmp);
+			} else {
+				result = result + " " + tmp;
+			}
+		}
+</pre>
+まずトークンごとにパターンを分解する。<br>
+もしそのトークンが変数であるならばハッシュマップに記録されている値に変更する。<br>
+loadRulesではStramTokenizerをもちいてトークンごとにわける。<br>
+<pre class="brush:java">
+					if ("rule".equals(st.sval)) {
+						st.nextToken();
+						// if(st.nextToken() =='&quot'){
+						name = st.sval;
+						st.nextToken();
+</pre>
+トークンがもしruleと等しかった場合トークンを次のものにしてそのトークンをnameに格納している。<br>
+<pre class="brush:java">
+						if ("if".equals(st.sval)) {
+							antecedents = new ArrayList&ltString&gt();
+							st.nextToken();
+							while (!"then".equals(st.sval)) {
+								antecedents.add(st.sval);
+								st.nextToken();
+							}
+</pre>
+トークンがifであった場合thenがくるまでは前件が記述されているはずなのでthenになるまでwhileループを使ってArrayListに前件を追加している。<br>
+thenがきたらconsequentに後件を追加している。<br>
+それらが終わったらその情報をルールに追加している。<br>
+matchingメソッドでは文字列が等しければtrueを返し、違う場合はトークンに分ける。<br>
+トークンが異なったらマッチングすることはないのでfalseを返し、トークンがマッチングに失敗してもfalseを返す。<br>
+tokenMatchingではトークンが等しければtrue、片方が変数の場合はvarMatchingを行う。<br>
+varMatchingではハッシュマップの変数のところに値があれば比較し、等しければ trueそうでなければfalseを返す。<br>
+まだハッシュマップの登録がなければ登録を行う。<br>
+Unify.javaのmatchメソッドでは
+<pre class="brush:java">
+			if (i == fin) { // 再帰の終了条件
+				keyset = vars.keySet().toString(); // キーの順番を保持
+				// 変数束縛の集合の要素として追加
+				ansList.add("("+ vars.values().toString().substring(1, vars.values().toString().length() - 1) + ")");
+			} 
+</pre>
+再帰の終了時に変数束縛の変数部分をkeysetにいれて、変数束縛の集合の要素をansListに追加する。<br>
+それ以外の時には
+<pre class="brush:java">
+else {
+				// 文字コードを指定してBufferedReaderオブジェクトを作る
+				BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(fileName), "UTF-8"));
+				
+				// ファイルから変数lineに1行ずつ読み込むfor文
+				for (String line = in.readLine(); line != null; line = in.readLine()) {
+					Unifier unifier = new Unifier();
+					if (i == 1) {
+						if (unifier.unify(pattern[i], line, unifier.vars)) { // パターンとlineのマッチング成功
+							match(fileName, pattern, i + 1, unifier.vars, fin); // 次のパターンについて再帰的に実行
+						}
+					} else {
+						// マッチングする前の変数束縛をコピー
+						HashMap&ltString, String&gt mem = new HashMap&ltString, String&gt(vars);
+						if (unifier.unify(pattern[i], line, mem)) { // パターンとlineのマッチング成功
+							match(fileName, pattern, i + 1, unifier.vars, fin); // 次のパターンについて再帰的に実行
+						}
+						unifier.vars = mem; // 新しい変数束縛をする前のハッシュマップに書き換え
+					}
+				}
+			}
+</pre>
+ファイルを1行ずつ読み込み、最初はパターンとその行をマッチングして成功したら再帰を行う。<br>
+最初ではないときはマッチング前のハッシュマップを保存しておき再帰を行う。<br>
+unifyでは
+<pre class="brush:java">
+		// 同じなら成功
+		if (string1.equals(string2))
+			return true;
+</pre>
+ここでは引数2つが等しいかどうかを比較している。<br>
+<pre class="brush:java">
+		st1 = new StringTokenizer(string1);
+		st2 = new StringTokenizer(string2);
+
+		// 数が異なったら失敗
+		if (st1.countTokens() != st2.countTokens())
+			return false;
+
+</pre>
+まず引数2つをトークンにわける。<br>
+もし2つの文章が同じものの場合はトークンの数が異なると言うことはありえない。<br>
+なのでトークンの数が異なれば同じ文章ではないと言うことがいえる。<br>
+<pre class="brush:java">
+		int length = st1.countTokens();
+		buffer1 = new String[length];
+		buffer2 = new String[length];
+		for (int i = 0; i < length; i++) {
+			buffer1[i] = st1.nextToken();
+			buffer2[i] = st2.nextToken();
+		}
+</pre>
+ここでは2つの引数をトークンごとに配列に格納している。<br>
+<pre class="brush:java">
+		for (int i = 0; i < length; i++) {
+			if (!tokenMatching(buffer1[i], buffer2[i])) {
+				return false;
+			}
+		}
+</pre>
+そして配列すべてに対してマッチするかを確かめる。<br>
+もしマッチしない部分があればfalseが返ってくる。<br>
+これらすべての処理を乗り越えることができれば2つの文字列は等しいということができる。<br>
+tokenMatchingでは
+<pre class="brush:java">
+		if (token1.equals(token2))
+			return true;
+		if (var(token1) && !var(token2))
+			return varMatching(token1, token2);
+		if (!var(token1) && var(token2))
+			return varMatching(token2, token1);
+		if (var(token1) && var(token2))
+			return varMatching(token1, token2);
+		return false;
+</pre>
+はじめのif文ではトークンどうしが等しければtrueを返す。<br>
+その他のif文では変数が1つであればそれをvarMatchingの先頭の引数にしてもう1つを第2引数に設定して結果を返す。<br>
+変数が2つの場合はそのままvarMatchingを行い結果を返す。<br>
+そのほかの場合はfalseを返す。<br>
+varMatchingでは第1引数、つまり変数が入っているほうの引数がハッシュマップにある場合
+<pre class="brush:java">
+if (vars.containsKey(vartoken)) {
+			if (token.equals(vars.get(vartoken))) {
+				return true;
+			} else {
+				return false;
+			}
+		} 
+</pre>
+もし第２引数の値とハッシュマップのその値が等しければtrueを返しそうでなければfalseを返す。<br>
+もし含まれない場合
+<pre class="brush:java">
+	replaceBuffer(vartoken, token);
+			if (vars.containsValue(vartoken)) {
+				replaceBindings(vartoken, token);
+			}
+			vars.put(vartoken, token);
+</pre>
+replaceBufferを行い、ハッシュマップにvartokenが含まれているときはreplaceBindeingを行って変数束縛をする。<br>
+replaceBufferでは
+<pre class="brush:java">
+for (int i = 0; i < buffer1.length; i++) {
+			if (preString.equals(buffer1[i])) {
+				buffer1[i] = postString;
+			}
+			if (preString.equals(buffer2[i])) {
+				buffer2[i] = postString;
+			}
+		}
+</pre>
+2つの文に対してもし変数が含まれている場合はその部分の文字列を束縛した値に変更している。<br>
+replaceBinfingsでは
+<pre class="brush:java">
+			if (preString.equals(vars.get(key))) {
+				vars.put(key, postString);
+			}
+</pre>
+このようにハッシュマップの値を入力している。<br>
+varでは引数が?で始まっていればtrueそうでなければfalseを返す。<br>
+<h3>実行例</h3>
+<!-- 実行例を示す．PNGやGIF等の絵を張っても良い．-->
+
+
+<!-- 画像ファイルを貼る場合は <img> タグを使う -->
+データファイルの一部を示す。<br>
+<img src="5.png"><br>
+上から順に6つの足があれば昆虫である。<br>
+羽があり、角があり、昆虫であればかぶとむしである。<br>
+4枚の羽があり、触角があり、昆虫なら蝶である。<br>
+というものである。<br>
+<img src="3.png"><br>
+これはデータファイルに対して、アサーションを
+<pre>
+It has four-wings
+It has six-legs
+It is flying
+It has multiple eyes
+It is red
+It has red-wings
+</pre>
+このようにして質問は「What is this?」で実行したものである。<br>
+実際に図で表してみると以下のように前向き推論を行っている。<br>
+<img src="4.png"><br>
+確かに推論過程で得られた虫の種類が表示されていることがわかる。<br>
+<後向き推論><br>
 <h3>独自仕様の説明</h3>
-<p>課題に加えて，以下の三点を独自仕様として組み込んだ．</p>
+  <p>課題に加えて，以下の三点を独自仕様として組み込んだ．</p>
 
 <ol>
   <li>扱うデータは虫に関するものにする</li>
@@ -1183,7 +1520,368 @@ he has red-wings
 <h2>課題6-3</h2>
 <!-- 以下，上記と同様 -->
 [必須課題6-3] 上記6-2で実装した質問応答システムのGUIを作成せよ．
-質問に答える際の推論過程を可視化できることが望ましい．
+質問に答える際の推論過程を可視化できることが望ましい．<br>
+<探索過程について><br>
+<h3>独自仕様の説明</h3>
+<!--
+ もし自分で独自に決めた仕様があれば，その説明を書く．
+-->
+前向き推論ではアサーションがどのように発火していったのかを示す。<br>
+後ろ向き推論ではどのような場合に成功したかを示す。<br>
+<h3>プログラムの構造</h3>
+<!--  どのような設計をしたか．-->
+前向き推論では新たにmakegraphメソッドを追加した。<br>
+makegraphメソッドでは推論過程をpngファイルに書き込んでいる。<br>
+後ろ向き推論のプログラムはまだ説明してないのですべて説明する。<br>
+makegraphメソッドでは推論過程をpngファイルに書き込んでいる。<br>
+RuleBaseクラスではsetWmメソッド、setRulesメソッド、backwardChainメソッド、matchinPatternsメソッド、matchinPatternOneメソッド、renameメソッド、instantiateメソッド、varメソッドが定義されている。<br>
+setWmメソッドではワーキングメモリをセットする。<br>
+setRulesメソッドではルールをセットする。<br>
+backwardChainメソッドは質問を受け取り後ろ向き推論を行っている。<br>
+matchinPatternsメソッドは与えられたすべての仮説とマッチするワーキングメモリのアサーションやルールの後件に対する変数束縛情報を再帰的に求めて返す。<br>
+matchinPatternOneメソッドはマッチングが成功したら、成功したワーキングメモリの番号やルールの番号の次の数字を返す。<br>
+renameメソッドは与えられたルールの変数をリネームしたルールのコピーを返す。<br>
+instantiateメソッドは与えられた文字列を変数束縛み従って具体化している。<br>
+varメソッドは先頭が?ならtrueを返す。<br>
+FileManagerクラスではloadRulesメソッド、loadWmメソッドが定義されている。<br>
+loadRulesメソッドはルールを読み込んでいる。<br>
+loadWmメソッドはワーキングメモリを読み込んでいる。<br>
+RuleクラスではgetRenamedRuleメソッド、getVarsメソッド、makeRenamedVarsTableメソッド、renameVarsメソッド、varメソッド、getNameメソッド、toStringメソッド、getAntecedentsメソッド、getConsequentメソッドが定義されている。<br>
+getRenamedRuleメソッドではルールの変数をリネーミングする。<br>
+getVarsメソッドではパターンに含まれる変数をリストにいれて返す。<br>
+makeRenamedVarsTableメソッドでは与えられた変数の集合と数字をもとに新しく変数を生成しそれに対応して新しくハッシュテーブルを作成し返す。<br>
+renameVarsメソッドでは与えられた文字列を変数束縛み従って具体化している。<br>
+varメソッドは先頭が?ならtrueを返す。<br>
+getNameメソッドではルール名を返す。<br>
+toStringメソッドではルールを文字列で返す。<br>
+getAntecedentsメソッドでは前件を返す。<br>
+getConsequentメソッドでは後件を返す。<br>
+Unifierクラスではunifyメソッド2種類とtokenMatchingメソッド、varMatchingメソッド、replaceBufferメソッド、replaceBindingsメソッド、varメソッドが定義されている。<br>
+unifyメソッドは2種類ある。<br>
+引数を3つとるものは
+引数を2つとるものは2つの引数がマッチングできればtrueを、できなければfalseを返す。<br>
+tokenMatchingメソッドは引数のtokenに応じてtrueかfalseを返す。<br>
+varMatchingメソッドはマッチングの処理を行っている。<br>
+replaceBufferメソッドはbufferの中身を書き換えている。<br>
+replaceBindingsメソッドはハッシュマップに値をいれている。<br>
+varメソッドは?から始まっていたらtrueそうでなければfalseを返す。<br>
+<h3>実装の説明</h3>
+<!--
+ どう実装したか，ソースコードを詳細に説明する．
+ 特に重要な箇所はレポートにペーストして説明する．
+-->
+まず前向き推論の部分で新たに追加した部分の実装の説明を行う。<br>
+図をつくるときにはgraphVizをもちいた。<br>
+<pre class="brush:java">
+		ArrayList&ltString&gt l = RuleBase.graph;
+		for(String l1 :l){
+			gv.addln(l1);
+		}
+		ArrayList&ltString&gt list = RuleBase.graph1;
+		for(String l2 :list){
+			gv.addln(l2);
+		}
+</pre>
+graph、graph1にはノードのつながりがString型で格納してあるのでそれをaddlnで出力している。<br>
+すべてのノードのつながりの出力が終わったらpngで保存している。<br>
+matchableメソッドでは最後までマッチングが成功したら変数束縛を返す。
+<pre class="brush:java">
+			for (int i = 0; i < assertions.size(); i++) {
+				HashMap&ltString, String&gt binding = new HashMap&ltString, String&gt();
+				if ((new Matcher()).matching((String) theAntecedents.get(n),
+						(String) assertions.get(i), binding)) {
+</pre>
+nが0のとき前件の先頭にたいしてすべてのアサーションとマッチングするか調べる。<br>
+成功した場合は以下の操作を行う。<br>
+<pre class="brush:java">
+					String label="[label =\""+assertions.get(i)+"\"]";
+					boolean check =false;
+					for(String l:RuleBase.name){
+						if(label.equals(l)){
+							check=true;
+						}
+					}
+					if(check){
+						System.out.println("rabel"+RuleBase.hash.get(label));
+						ass.add("\""+RuleBase.hash.get(label)+"\""+label);
+						nodename.add(RuleBase.hash.get(label));
+					}
+					else{
+					ass.add("\"b"+Integer.toString(count)+"\""+"[label =\""+assertions.get(i)+"\"]");
+					nodename.add("b"+Integer.toString(count));
+					}
+					count++;
+					bindings.add(binding);
+					success = true;
+</pre>
+labelにはアサーションの名前が入っている。<br>
+RuleBase.nameに含まれているかを調べている。<br>
+もし含まれているならハッシュをもちいて名前をもってきている。<br>
+含まれていなければ新たに追加する。<br>
+そのあと変数束縛をリストに追加する。<br>
+<pre class="brush:java">
+			if (success) {
+				return matchable(theAntecedents, n + 1, bindings);
+			} else {
+				ass.clear();
+				nodename.clear();
+				return null;
+			}
+</pre>
+もしマッチングが成功していたら再帰を行う。<br>
+成功していなければリストをクリアする。<br>
+それ以外の場合はノード関係の追加の方法などは基本的に同じである。<br>
+異なるのは以下の部分である。<br>
+<pre class="brush:java">
+			for (int i = 0; i < bindings.size(); i++) {
+				for (int j = 0; j < assertions.size(); j++) {
+					if ((new Matcher()).matching(
+							(String) theAntecedents.get(n),
+							(String) assertions.get(j),
+							(HashMap) bindings.get(i))) {
+						newBindings.add(bindings.get(i));
+</pre>
+考えられる変数束縛すべてに対してマッチングを実行している。<br>
+成功した場合はその変数束縛を記録している。<br>
+RuleBaseクラスのforwardChainメソッドについて説明する。<br>
+すべてのルールに対してmatchingAssertionsメソッドをもちいて変数束縛が起こっているのかを調べる。<br>
+もし変数束縛があれば以下の操作を行う。<br>
+<pre class="brush:java">
+				for (int j = 0; j < bindings.size(); j++) {
+						// 後件をインスタンシエーション
+						String newAssertion = instantiate((String) consequent,
+								(HashMap) bindings.get(j));
+</pre>
+起こりうる変数束縛すべてに対してinstantiateメソッドをもちいて後件を具体化する。<br>
+もしそれがワーキングメモリに入っていない場合は以下の操作を行う。<br>
+<pre class="brush:java">
+							String n="\""+a+Integer.toString(count)+"\"[shape=record,label=\"{"+aRule.getName()+"|if";
+							for(String l:antecedents){
+								n+=l+"|";
+							}
+							n+="then"+consequent;
+							
+							n+="}\"]";
+							System.out.println(n);
+							count++;
+							for(String l:WorkingMemory.nodename){
+								graph1.add(l+"->"+"a"+Integer.toString(count-1));
+							}
+							for(String l:WorkingMemory.ass){
+								graph.add(l+"->"+n);
+								System.out.println("ass="+l);
+							}
+							name.add("[label =\""+newAssertion+"\"]");
+							hash.put("[label =\""+newAssertion+"\"]","c"+Integer.toString(count));
+							String n2="\"c"+Integer.toString(count)+"\""+"[label =\""+newAssertion+"\"]";
+							graph.add(n+"->"+n2);
+							graph1.add("a"+Integer.toString(count-1)+"->"+"c"+Integer.toString(count));
+							WorkingMemory.ass.clear();
+							WorkingMemory.nodename.clear();
+							System.out.println("Success: " + newAssertion);
+							wm.addAssertion(newAssertion);
+							newAssertionCreated = true;
+</pre>
+String型変数nにはルールを表すノードを作成している。<br>
+nodenameとassのfor文にはこのルールの前件を満たすアサーションが入っているのですべてに対してノード関係があることをリストに格納している。<br>
+その後新しくでてきたアサーションのラベルを記録し、ハッシュマップにそのラベルをもつ変数名を記録する。<br>
+String型変数n2には新しく追加されるアサーションを表すノードを作成している。<br>
+ルールとそのアサーションの関係をリストに格納する。<br>
+終わったらassとnodenameはもう必要ないので削除してワーキングメモリにアサーションを追加する。<br>
+ルールをすべて見た後追加されるアサーションがなければ終了する。<br>
+次に後ろ向き推論のプログラムについて説明する。<br>
+makegraphメソッドは前向き推論のときと同じなので説明を省略する。<br>
+RuleBaseクラスのbackwardChainメソッドではmatchingPatternsメソッドをもちいてマッチングが成功した場合成功したことを出力するようになっている。<br>
+matchingPatternsメソッドでは質問が1つの場合は以下の操作を行う。<br>
+<pre class="brush:java">
+	if(thePatterns.size() == 1){
+	    firstPattern = (String)thePatterns.get(0);
+	    if(matchingPatternOne(firstPattern,theBinding,0) != -1){
+	      return true;
+	    } else {
+	      return false;
+	    }
+	}
+</pre>
+その質問を取り出してマッチングが成功したらture、失敗したらfalseを返すようになっている。<br>
+それ以外の場合ではまず先頭の質問をリストから取り出す。<br>
+そのあとワーキングメモリとルールすべてに対してある操作を行う。<br>
+始めに
+<pre class="brush:java">
+	      HashMap&ltString,String&gt orgBinding = new HashMap&ltString,String&gt();
+	      for(Iterator&ltString&gt i = theBinding.keySet().iterator() ; i.hasNext();){
+	          String key = i.next();
+	          String value = (String)theBinding.get(key);
+	          orgBinding.put(key,value);
+	      }
+</pre>
+ハッシュマップを保存しておく。<br>
+<pre class="brush:java">
+			oldgraph2.clear();
+			oldgraph3.clear();
+			for(String l:oldgraph){
+				oldgraph2.add(l);
+			}
+			for(String l:oldgraph1){
+				oldgraph3.add(l);
+			}
+</pre>
+ここでは探索過程を描画するためのノード関係のリストを保存している。<br>
+リストなので一度クリアしてからfor文をもちいて格納し直している。<br>
+古いものを保存できたらmatchinPatternOneを行う。<br>
+その返値が-1ではない場合はマッチングが成功したので残りの要素をmatchinPatternsに渡して再び行う。<br>
+もし成功したらtureを返す。<br>
+失敗したらcPointの値をすすめて、ノード関係や変数束縛情報を復元する。<br>
+返値が-1の場合も失敗しているので同様にノード関係や変数束縛情報を復元する。<br>
+matchingPatternOneメソッドでは始めにワーキングメモリとマッチングをする。<br>
+マッチングに成功した場合は
+<pre class="brush:java">
+		String m="";
+		String label="[label =\""+thePattern+"\"]";
+		String m1="";
+		boolean check =false;
+		for(String l:name){
+			if(label.equals(l)){
+				check=true;
+			}
+		}
+		if(check){
+			m="\""+hash.get(label)+"\""+label;
+			m1=hash.get(label);
+		}else{
+		 m="\"b"+Integer.toString(count)+"\""+"[label=\""+thePattern+"\"]";
+		 m1="b"+Integer.toString(count);
+		}
+		String n="\"d"+Integer.toString(count)+"\""+"[label =\""+(String)wm.get(i)+"\"]";
+		
+		graph.add(m+"->"+n);
+		graph1.add(m1+"->"+"d"+Integer.toString(count));
+		count++;
+</pre>
+ここでノード関係を記録している。<br>
+記録の仕方は前向き推論のときとだいたい同じである。<br>
+すでに記録されてあるラベル名かどうかを調べて、すでに登録されているものなら名前を同じにして、異なれば新しく作成してノード関係を記録している。<br>
+ワーキングメモリに対して操作が終わったらルールに対しても同様にマッチングする。<br>
+マッチングに成功した場合は
+<pre class="brush:java">
+		String m="";
+		String label="[label =\""+thePattern+"\"]";
+		String m1="";
+		boolean check =false;
+		for(String l:name){
+			if(label.equals(l)){
+				check=true;
+			}
+		}
+		if(check){
+			m="\""+hash.get(label)+"\""+label;
+			m1=hash.get(label);
+		}else{
+		 m="\"b"+Integer.toString(count)+"\""+"[label=\""+thePattern+"\"]";
+		 m1="b"+Integer.toString(count);
+		}
+</pre>
+まずはすでにラベルが登録されていないかを調べる。<br>
+これは先ほど説明したものと同じ手法である。<br>
+<pre class="brush:java">
+		String n="\"a"+Integer.toString(count)+"\"[shape=record,label=\"{"+aRule.getName()+"|if";
+		String a="a"+Integer.toString(count);
+		for(String l:antecedents){
+			n+=l+"|";
+		}
+		n+="then"+consequent;
+		n+="}\"]";
+</pre>
+ここではルールのノードを作成している。<br>
+ノード関係を追加する前に
+<pre class="brush:java">
+		oldgraph.clear();
+		oldgraph1.clear();
+		for(String l:graph){
+			oldgraph.add(l);
+		}
+		for(String l:graph1){
+			oldgraph1.add(l);
+		}
+</pre>
+このように古いものを記録している。<br>
+そのあとノード関係を記録している。<br>
+<pre class="brush:java">
+		for(String n1:antecedents){
+			String n2="\"c"+Integer.toString(count)+"\""+"[label=\""+n1+"\"]";
+			name.add("[label =\""+n1+"\"]");
+			hash.put("[label =\""+n1+"\"]","c"+Integer.toString(count));
+			graph1.add(a+"->"+"c"+Integer.toString(count));
+			count++;
+		graph.add(n+"->"+n2);
+	}	
+</pre>
+ここではルールの前件部分を名前リストに登録したり、ハッシュマップにラベルの変数名を登録してルールとノード関係を記録している。<br>
+<pre class="brush:java">
+ 		ArrayList&ltString&gt newPatterns = aRule.getAntecedents();
+		if(matchingPatterns(newPatterns,theBinding)){
+		    return wm.size()+i+1;
+		} else {
+		    // 失敗したら元に戻す．
+			graph.clear();
+			graph1.clear();
+			for(String l:oldgraph){
+				graph.add(l);
+			}
+			for(String l:oldgraph1){
+				graph1.add(l);
+			}
+		    theBinding.clear();
+		    for(Iterator&ltString&gt itr = orgBinding.keySet().iterator(); itr.hasNext();){
+			String key = itr.next();
+			String value = orgBinding.get(key);
+			theBinding.put(key,value);
+		    }
+		}
+</pre>
+ルールの前件に対してマッチングするか試している。<br>
+失敗していた場合は変数束縛やノード関係を戻す。<br>
+instantiateメソッドやvarメソッド、loadRulesメソッドは前向き推論と同じなので説明を省略する。<br>
+loadWmメソッドはファイルを読み込んでトークンごとにわけることでワーキングメモリに追加している。<br>
+getRenamedRuleメソッドでは
+<pre class="brush:java">
+	for(int i = 0 ; i < antecedents.size() ; i++){
+	    String antecedent = (String)this.antecedents.get(i);
+	    vars = getVars(antecedent,vars);
+	}
+	vars = getVars(this.consequent,vars);
+</pre>
+この部分ではルールの前件部分と後件部分の変数をgetVarsメソッドを使い求めている。<br>
+その後
+<pre class="brush:java">
+	HashMap&ltString,String&gt renamedVarsTable = makeRenamedVarsTable(vars,uniqueNum);
+	ArrayList&ltString&gt newAntecedents = new ArrayList&ltString&gt();
+for(int i = 0 ; i < antecedents.size() ; i++){
+	    String newAntecedent =
+		renameVars((String)antecedents.get(i),
+			   renamedVarsTable);
+	    newAntecedents.add(newAntecedent);
+	}
+	String newConsequent = renameVars(consequent,
+					  renamedVarsTable);
+
+</pre>
+makeRenamedVarsTableメソッドをもちいて新たな変数名を生成してハッシュマップに保存する。<br>
+そのあとはrenameVarsメソッドをもちいて前件部と後件部の変数を変更している。<br>
+getVarsメソッドではトークンにわけて変数があったらリストに追加する。<br>
+makeRenamedVarsTableメソッドでは新たな変数を生成し、対応するようにハッシュマップを作成し、そのハッシュマップを返す。<br>
+renameVarsメソッドではinstantiateメソッドと構造は同じである、<br>
+Unifierクラスは課題6-2で説明したものとだいたい同じなので省略する。<br>
+<h3>実行例</h3>
+<!-- 実行例を示す．PNGやGIF等の絵を張っても良い．-->
+まず前向き推論では<br>
+<img src="4.png"><br>
+これは課題6-2の状況で実行したものである。<br>
+実行するとこれが保存されていた。<br>
+結果は正しい。<br>
+次に後ろ向き推論では<br>
+<img src="6.png"><br>
+このように正しく動いていることがわかる。<br>
 <h3>独自仕様の説明</h3>
 <h3>プログラムの構造</h3>
 <h3>実装の説明</h3>
@@ -1274,6 +1972,32 @@ he has red-wings
 
 </p>
 </br>
+  <b>課題6-2 前向き推論</b><br>
+  データファイルは虫についてのものを作成した。<br>
+この場合の前向き推論での質疑応答とはアサーションをユーザーに入力してもらい、その条件を満たす虫の名前を返すものだと考えた。<br>
+そのため前向き推論を行ったあとのワーキングメモリから虫の名前を探せばよいと考えた。<br>
+今回のUnifyのプログラムは班員の鈴木祥太君が以前に作ったプログラムをもらった。<br>
+Unifyするときはパターンとファイルの中身のマッチングを行うものであった。<br>
+なので最終的に得られたワーキングメモリをファイルに書き出すことでUnifyのプログラムを実行しやすくした。<br>
+またワーキングメモリの保存場所を最初に入れてもらうアサーションのファイルとは別にしたのは誤ったアサーションをいれてしまって推論を実行してしまったときに追加してしまうと再度戻すのに手間がかかるため、別のファイルに書き込むようにした。<br>
+このプログラムにおいてマッチングに成功した場合にはansListに例えば[(insect), (Dragonfly)]のような形で格納されている。<br>
+今回調べたいのはこの()の中身である。<br>
+したがってansListを1文字ずつに分解して順番にたどっていくとまず始めに(が見つかるはずである。<br>
+見つかったらbooleanをtrueに変更することで中身の記録を開始するようにした。<br>
+booleanがtrueの場合はString型の変数に1文字ずつ追加していくようにしてある。<br>
+もし)が見つかったら一端そこまでの文字列をanswerというArrayListに追加して文字列の初期化、booleanをfalseに変更するようにした。<br>
+このようにすることでマッチングしたものを入手することができるようにした。<br>
+ここで大事なのはプログラムの順番である。<br>
+文字の追加は(の判定よりも前にして、)の判定よりも後にする必要がある。<br>
+なぜなら(が見つかったらそこでbooleanがtrueに変更されてしまうので(も一緒に追加されてしまう。<br>
+そのため(の判定よりも文字列の追加は前にする必要があった。<br>
+似たようにbooleanがfalseになるのは)の判定のあとなのでその前に文字列の追加を行うプログラムがあると)が含まれてしまう。<br>
+したがってこの順番にする必要があった。<br>
+データファイルでは答えとなりうるものは大文字から始まるようにしてあるのでマッチングに成功したものの中で大文字から始まるものが答えと判断するようにしてある。<br>
+このようにしたことでinsectであるなどの余計なものが答えとして出力されないようになっている。<br>
+その一方で複数でてきた場合はすべて出力してしまうので最後にワーキングメモリに追加されたものと比較するなどの対処をする必要があるかもしれないが、前向き推論では使わない条件があっても動いてしまうので複数出力することで可能性があるものすべてを出力するようにした。<br>
+ルールをファイルから読み込むようにさせたかったのでRuleBaseのコンストラクタを増やした。<br>
+引数のものをファイル名にすることで対応させた。<br>
 <b>課題6-2 後向き推論</b><br>
 <h3>グループ課題における分担</h3>
 <p>
@@ -1299,8 +2023,33 @@ he has red-wings
 
 </br>
 </br>
-<b>課題6-4</b></br>
-<p>グループ3では、進捗管理等をLINEを使って管理し、データ、プログラム等の共有をGitHubを用いて管理することにした。</br></p><p>
+<b>課題6-3探索過程について</b><br>
+graphvizの場合
+<pre class="brush:java">
+			String check1="\"c\"[shape=record,label=\"{rule CarRule8|if 	?x is made in Japan|?x has a VTEC engine|then 	?x is a Honda}\"]";
+			String check5 ="\"f\"[label = \"my-car is a Honda\"]";
+			gv.addln(check1+"->"+check5);
+</pre>
+このようにした場合はなぜか<br>
+<image src="1.png"><br>
+このようにノード関係が記録できなかった。<br>
+このときの対応策として新たに
+<pre class="brush:java">
+gv.addln("c->f");
+</pre>
+これを追加してみると<br>
+<image src="2.png"><br>
+このようにしっかりノード関係が記録できることがわかった。<br>
+したがって探索過程を記録する際にはノードを表すものとノードの表す変数部分、この例だとcやfといったものも記録する必要があることがわかった。<br>
+ここで問題となったのが変数部分をいったいどのようにするかということである。<br>
+今回はint型の変数を使うことで対応した。<br>
+これにより名前がかぶることなくなった。<br>
+かぶらなくなった一方で毎回変数の名前が変わってしまうので同じラベルの場合は変数の名前を共通にする必要があった。<br>
+今回は対策としてハッシュマップを作ることで対応した。<br>
+ラベルをキーにして変数名をハッシュ値に設定することですぐに同じラベルをもつ変数名を呼び出すことができるようになった。<br>
+前向き推論ではアサーションから発火したルールなどノード関係が消えることはないが後ろ向き推論では失敗した場合に少し前までノード関係を戻す必要があった。<br>
+そのためArrayListを何種類も用意することで対応した。<br>
+<b>課題6-4</b></br><p>グループ3では、進捗管理等をLINEを使って管理し、データ、プログラム等の共有をGitHubを用いて管理することにした。</br></p><p>
 LINEを用いる理由は、
 <li>文章で共有する情報は使い慣れているLINEで十分</li>
 <li>スケジュール調整等のツールが豊富</li>
@@ -1321,13 +2070,26 @@ Githubは、グループを作成しそのなかでファイルを管理する�
 <h2>感想</h2>
 <!-- 感想を書く．-->
 <!-- 例: 〜が面白かった，〜がわからなかった，〜を作ってみたい，講義・演習に関する要望，など．-->
+<b>27115157</b><br>
 <p>
 今までの個人課題と比べて躓いたときに相談、協力しあえた分精神的にも良い環境で課題を進めることができた。またクオリティも個人課題と比べて高いものができたと思う。27115157
 </p>
+<b>27115076</b><br>
 <p>
 グループで1つの課題に取り組むことは知能プログラミング演習Ⅱでは初であったため，課題の分担やソースコードの共有等にかなり苦戦した．どのようにメンバー全員で課題に取り組めば手早く，個人のストレスが無いように課題を進められるのかを模索しながら，今後の課題に取り組んでいきたい．27115076
 </p>
-
+<b>27115120</b><br>
+初めてのチームでの課題であったがなかなか大変であった。<br>
+最初であるが故にgithubの使い方を調べたり、課題の分担をどのようにするのかなどわからなかった。<br>
+初め、質疑応答の作成するプログラムを組む際にはmain関数でそのまま実装していたが、GUI担当にメソッドで返してくれるほうがありがたいといわれた。<br>
+他人のことを考えてプログラムを組む必要があると改めて感じた。<br>
+次回以降は他の人がいったいどのような形でプログラムをしてほしいのか考えながら書きたい。<br>
+今までは1人でやればよかったので自分のペースで課題を進めていくことができたが、今回はメンバーのことを考えてはやめにやってなきゃいけないと感じた。<br>
+1人のときよりも精神的に負担がかかった。<br>
+今回まずはじめに悩んだのは前向き推論の質疑応答とはいったい何なのかというものであった。<br>
+どう考えても後ろ向き推論にしかならないような気がした。<br>
+なのでデータの内容を考えてうまくいくようにした。<br>
+データを作る部分では自分はルール5つほどしか作成しなかったのでもう少し貢献したかった。<br>
 
 
 <h2>参考文献</h2>
@@ -1337,6 +2099,8 @@ Githubは、グループを作成しそのなかでファイルを管理する�
   <li>グループ3のメンバー</li>
   <li>新谷虎松 著（19XX）『知能プログラミング入門』コロナ社</li>
   <li>『サルでもわかるGit入門』(https://www.backlog.jp/git-guide/)</li>
+  <li>http://zero-config.com/java/string_split.html 最終アクセス日11月30日</li>
+<li>http://www.kenmiya.info/?p=115 最終アクセス日11月30日</li>
 </ul>
 
 </body>
